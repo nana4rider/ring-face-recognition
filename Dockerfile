@@ -10,6 +10,8 @@ RUN npm run build
 
 FROM node:22-alpine AS runtime
 
+RUN apk add --no-cache ffmpeg
+
 WORKDIR /app
 COPY --chown=node:node --from=build /app/package*.json ./
 COPY --chown=node:node --from=build /app/dist dist
