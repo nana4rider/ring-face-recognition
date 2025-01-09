@@ -31,7 +31,9 @@ export default async function detectFace(
 
   if (!response.ok) {
     if (logger.isDebugEnabled()) {
-      logger.debug(`response: ${await response.json()}`);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const json: { error: string } = await response.json();
+      logger.info(`response: ${json.error}`);
     }
     return undefined;
   }

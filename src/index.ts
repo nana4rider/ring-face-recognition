@@ -7,7 +7,8 @@ import { composeImages } from "@/util/imageUtil";
 import assert from "assert";
 import dayjs from "dayjs";
 import env from "env-var";
-import { writeFile } from "fs/promises";
+import { rm, writeFile } from "fs/promises";
+import { glob } from "glob";
 import path from "path";
 import { PushNotificationAction, RingCamera } from "ring-client-api";
 
@@ -41,6 +42,12 @@ const STREAM_VIDEO_CONFIG = [
 ];
 
 async function processStream(camera: RingCamera) {
+  // debug image
+  if (logger.isDebugEnabled()) {
+    const snapshotFileNames = await glob("snapshot/*.jpg");
+    await Promise.all(snapshotFileNames.map((fileName) => rm(fileName)));
+  }
+
   const faceImageBuffers: Buffer[] = [];
   let timeoutTimerId: NodeJS.Timeout | undefined = undefined;
 
@@ -48,9 +55,10 @@ async function processStream(camera: RingCamera) {
     logger.info(`receive buffer length: ${imageBuffer.length}`);
     const faceBuffer = await detectFace(imageBuffer);
 
+    // debug image
     if (logger.isDebugEnabled()) {
-      const timestamp = dayjs().format("YYYY-MM-DD-HH-mm-ss-SSS");
-      const fileName = `${timestamp}_${faceBuffer ? "ok" : "ng"}.jpg`;
+      const ts = dayjs().format("YYYY-MM-DD-HH-mm-ss-SSS");
+      const fileName = `${ts}_${faceBuffer ? "ok" : "ng"}.jpg`;
       void writeFile(path.join("snapshot", fileName), imageBuffer);
     }
 
@@ -66,29 +74,34 @@ async function processStream(camera: RingCamera) {
       return;
     }
 
-    try {
-      const compositeFaceImageBuffer = await composeImages(faceImageBuffers);
-      logger.info("画像の合成完了");
+    logger.info("stop stream");
+    assert(timeoutTimerId);
+    clearTimeout(timeoutTimerId);
+    timeoutTimerId = undefined;
+    videoStream.stop();
 
-      const face = await recognizeFace(compositeFaceImageBuffer);
-      if (!face) return;
-      const { FaceId: faceId, ExternalImageId: imageId } = face;
+    const compositeFaceImageBuffer = await composeImages(faceImageBuffers);
+    logger.info("画像の合成完了");
 
-      logger.info(`[Rekognition] recognize: ${JSON.stringify(face)}`);
-      await triggerWebhook({
-        type: "rekognition",
-        result: {
-          ...(faceId ? { faceId } : undefined),
-          ...(imageId ? { imageId } : undefined),
-        },
-      });
-    } finally {
-      logger.info("stop stream");
-      assert(timeoutTimerId);
-      clearTimeout(timeoutTimerId);
-      timeoutTimerId = undefined;
-      videoStream.stop();
+    // debug image
+    if (logger.isDebugEnabled()) {
+      const ts = dayjs().format("YYYY-MM-DD-HH-mm-ss-SSS");
+      const fileName = `${ts}_comp.jpg`;
+      void writeFile(path.join("snapshot", fileName), compositeFaceImageBuffer);
     }
+
+    const face = await recognizeFace(compositeFaceImageBuffer);
+    if (!face) return;
+    const { FaceId: faceId, ExternalImageId: imageId } = face;
+
+    logger.info(`[Rekognition] recognize: ${JSON.stringify(face)}`);
+    await triggerWebhook({
+      type: "rekognition",
+      result: {
+        ...(faceId ? { faceId } : undefined),
+        ...(imageId ? { imageId } : undefined),
+      },
+    });
   };
 
   let callbackCounter = 0;
