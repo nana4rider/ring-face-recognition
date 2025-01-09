@@ -5,7 +5,10 @@ import initializeRingCamera from "@/service/ring";
 import triggerWebhook from "@/service/webhook";
 import { composeImages } from "@/util/imageUtil";
 import assert from "assert";
+import dayjs from "dayjs";
 import env from "env-var";
+import { writeFile } from "fs/promises";
+import path from "path";
 import { PushNotificationAction, RingCamera } from "ring-client-api";
 
 /** ビデオストリームを開始してから自動終了するまでの時間 */
@@ -44,10 +47,15 @@ async function processStream(camera: RingCamera) {
   const handleImageBuffer = async (imageBuffer: Buffer) => {
     logger.info(`receive buffer length: ${imageBuffer.length}`);
     const faceBuffer = await detectFace(imageBuffer);
-    if (!faceBuffer) {
-      logger.info("[Face Detector] 顔が検出できなかった");
-      return;
+
+    if (logger.isDebugEnabled()) {
+      const timestamp = dayjs().format("YYYY-MM-DD-HH-mm-ss-SSS");
+      const fileName = `${timestamp}_${faceBuffer ? "ok" : "ng"}.jpg`;
+      void writeFile(path.join("snapshot", fileName), imageBuffer);
     }
+
+    if (!faceBuffer) return;
+    logger.info("[Face Detector] 顔検出: OK");
 
     faceImageBuffers.push(faceBuffer);
     logger.debug(
