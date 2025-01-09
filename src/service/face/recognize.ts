@@ -10,10 +10,7 @@ const AWS_REKOGNITION_COLLECTION_ID = env
   .get("AWS_REKOGNITION_COLLECTION_ID")
   .required()
   .asString();
-const FACE_MATCH_THRESHOLD = env
-  .get("FACE_MATCH_THRESHOLD")
-  .default(95)
-  .asIntPositive();
+const FACE_MATCH_THRESHOLD = env.get("FACE_MATCH_THRESHOLD").asIntPositive();
 
 const rekognition = new RekognitionClient();
 
