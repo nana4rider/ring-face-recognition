@@ -17,7 +17,7 @@ describe("triggerWebhook", () => {
     process.env = { ...env };
   });
 
-  test("ok:trueの場合、正常終了", async () => {
+  test("ok: true の場合、正常に完了する", async () => {
     process.env.WEBHOOK = WEBHOOK;
     const mockPayload = { key: "value" };
 
@@ -41,7 +41,7 @@ describe("triggerWebhook", () => {
     });
   });
 
-  test("ok:falseの場合、例外を投げる", async () => {
+  test("ok: false の場合、例外を投げる", async () => {
     process.env.WEBHOOK = WEBHOOK;
     const mockPayload = { key: "value" };
 

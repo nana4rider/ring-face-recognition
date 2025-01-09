@@ -20,10 +20,13 @@ const rekognition = new RekognitionClient();
 export default async function recognizeFace(
   imageBuffer: Buffer,
 ): Promise<Face | undefined> {
+  logger.info("[Rekognition] 開始");
+
   const command = new SearchFacesByImageCommand({
     CollectionId: AWS_REKOGNITION_COLLECTION_ID,
     FaceMatchThreshold: FACE_MATCH_THRESHOLD,
     Image: { Bytes: imageBuffer },
+    MaxFaces: 1,
   });
   const {
     FaceMatches: matches,
@@ -41,7 +44,7 @@ export default async function recognizeFace(
   }
 
   logger.info(
-    `Similarity: ${face.Similarity} / Confidence: ${face.Face.Confidence}`,
+    `[Rekognition] Similarity: ${face.Similarity} / Confidence: ${face.Face.Confidence}`,
   );
 
   return face.Face;

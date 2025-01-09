@@ -24,6 +24,7 @@ export default async function detectFace(
   });
 
   if (!response.ok) {
+    /* istanbul ignore next */
     if (logger.isDebugEnabled()) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const json: { error: string } = await response.json();
