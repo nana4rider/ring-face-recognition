@@ -5,9 +5,10 @@ import { readFile } from "fs/promises";
 import { RingApi, RingCamera } from "ring-client-api";
 
 const RING_CAMERA_ID = env.get("RING_CAMERA_ID").asIntPositive();
+const REFRESH_TOKEN_PATH = ".refreshToken";
 
 export default async function initializeRingCamera(): Promise<RingCamera> {
-  const refreshToken = (await readFile(".refreshToken", "utf-8")).trim();
+  const refreshToken = (await readFile(REFRESH_TOKEN_PATH, "utf-8")).trim();
 
   const ringApi = new RingApi({
     refreshToken,
@@ -17,7 +18,7 @@ export default async function initializeRingCamera(): Promise<RingCamera> {
     ({ newRefreshToken, oldRefreshToken }) => {
       if (!oldRefreshToken) return;
       logger.info("update Refresh Token");
-      writeFileSync(".refreshToken", newRefreshToken);
+      writeFileSync(REFRESH_TOKEN_PATH, newRefreshToken);
     },
   );
 

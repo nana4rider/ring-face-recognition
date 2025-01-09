@@ -9,11 +9,14 @@ import dayjs from "dayjs";
 import env from "env-var";
 import { rm, writeFile } from "fs/promises";
 import { glob } from "glob";
+import http from "http";
 import path from "path";
 import { PushNotificationAction, RingCamera } from "ring-client-api";
+import { promisify } from "util";
 
+const PORT = env.get("PORT").default(3000).asPortNumber();
 /** ビデオストリームを開始してから自動終了するまでの時間 */
-const DETECT_TIMEOUT = env.get("DETECT_TIMEOUT").default(20000).asIntPositive();
+const DETECT_TIMEOUT = env.get("DETECT_TIMEOUT").default(15000).asIntPositive();
 /** Rekognition APIに渡す顔の数 */
 const REKOGNITION_FACE_COUNT = env
   .get("REKOGNITION_FACE_COUNT")
@@ -44,8 +47,10 @@ const STREAM_VIDEO_CONFIG = [
 async function processStream(camera: RingCamera) {
   // debug image
   if (logger.isDebugEnabled()) {
+    logger.info("デバッグ画像削除開始");
     const snapshotFileNames = await glob("snapshot/*.jpg");
     await Promise.all(snapshotFileNames.map((fileName) => rm(fileName)));
+    logger.info("デバッグ画像削除完了");
   }
 
   const faceImageBuffers: Buffer[] = [];
@@ -80,6 +85,7 @@ async function processStream(camera: RingCamera) {
     timeoutTimerId = undefined;
     videoStream.stop();
 
+    logger.info("画像の合成開始");
     const compositeFaceImageBuffer = await composeImages(faceImageBuffers);
     logger.info("画像の合成完了");
 
@@ -151,9 +157,25 @@ async function main() {
     }
   });
 
-  const shutdownHandler = () => {
+  const server = http.createServer((req, res) => {
+    if (req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({}));
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  });
+
+  await promisify(server.listen.bind(server, PORT))();
+  logger.info(`Health check server running on port ${PORT}`);
+
+  const shutdownHandler = async () => {
     logger.info("shutdown");
+    await promisify(server.close.bind(server))();
+    logger.info("[HTTP] closed");
     camera.disconnect();
+    logger.info("[Ring] disconnect");
     process.exit(0);
   };
 
