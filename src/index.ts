@@ -59,4 +59,9 @@ async function main() {
   process.on("SIGTERM", () => void shutdownHandler());
 }
 
-await main();
+try {
+  await main();
+} catch (err) {
+  logger.error("main() error:", err);
+  process.exit(1);
+}
