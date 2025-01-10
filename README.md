@@ -1,4 +1,4 @@
-# Ring Face Rekognition
+# Ring Face Recognition
 
 [![License: ISC](https://img.shields.io/github/license/nana4rider/ring-face-recognition)](LICENSE)
 ![GitHub Actions Test](https://github.com/nana4rider/ring-face-recognition/actions/workflows/test.yml/badge.svg)
