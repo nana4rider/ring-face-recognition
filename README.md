@@ -1,8 +1,14 @@
 # Ring Face Rekognition
 
+[![License: ISC](https://img.shields.io/github/license/nana4rider/ring-face-recognition)](LICENSE)
+![GitHub Actions Test](https://github.com/nana4rider/ring-face-recognition/actions/workflows/test.yml/badge.svg)
+![GitHub Actions Release](https://github.com/nana4rider/ring-face-recognition/actions/workflows/release.yml/badge.svg)
+
+## 概要
+
 Ring Doorbellで顔認識するためのアプリケーションです。
 
-### フロー
+## フロー
 
 ```mermaid
 graph TD
@@ -16,7 +22,7 @@ graph TD
     recognizeFace -->|一致なし| stopStream[ストリーミングを終了]
 ```
 
-### リンク
+## リンク
 
 - [Face Detector](https://github.com/nana4rider/face-detector)
 - [Amazon Rekognition API SearchFacesByImageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/rekognition/command/SearchFacesByImageCommand/)
