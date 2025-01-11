@@ -3,6 +3,7 @@ import {
   Face,
   RekognitionClient,
   SearchFacesByImageCommand,
+  SearchFacesByImageCommandOutput,
 } from "@aws-sdk/client-rekognition";
 import env from "env-var";
 
@@ -25,10 +26,19 @@ export default async function recognizeFace(
     Image: { Bytes: imageBuffer },
     MaxFaces: 1,
   });
+
+  let result: SearchFacesByImageCommandOutput;
+  try {
+    result = await rekognition.send(command);
+  } catch (err) {
+    logger.error("[Rekognition] エラー", err);
+    return undefined;
+  }
+
   const {
     FaceMatches: matches,
     SearchedFaceConfidence: searchedFaceConfidence,
-  } = await rekognition.send(command);
+  } = result;
 
   if (!searchedFaceConfidence) {
     logger.info("[Rekognition] 顔が検出されなかった");

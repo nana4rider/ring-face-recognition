@@ -52,7 +52,23 @@ describe("recognizeFace", () => {
     expect(result).toEqual(mockFace);
   });
 
-  test("顔が検出されなかった場合、undefinedを返す", async () => {
+  test("顔が見つからないなどでエラーが発生した場合、undefinedを返す", async () => {
+    const mockImageBuffer = Buffer.from("mockBuffer");
+
+    mockSend.mockReturnValue(
+      Promise.reject(Error("InvalidParameterException")),
+    );
+
+    const { default: recognizeFace } = await import("@/service/face/recognize");
+    const result = await recognizeFace(mockImageBuffer);
+
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.any(mockSearchFacesByImageCommand),
+    );
+    expect(result).toBeUndefined();
+  });
+
+  test("FaceMatchesが空の場合、undefinedを返す", async () => {
     const mockImageBuffer = Buffer.from("mockBuffer");
 
     mockSend.mockReturnValueOnce({

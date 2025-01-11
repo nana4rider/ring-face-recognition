@@ -10,7 +10,7 @@ import { writeFileSync } from "fs";
 import { readFile, rm, writeFile } from "fs/promises";
 import { glob } from "glob";
 import path from "path";
-import { RingApi, RingCamera } from "ring-client-api";
+import { PushNotificationAction, RingApi, RingCamera } from "ring-client-api";
 
 /** 指定がなければ1番目のカメラを使う */
 const RING_CAMERA_ID = env.get("RING_CAMERA_ID").asIntPositive();
@@ -137,6 +137,29 @@ export async function startFaceRecognition(camera: RingCamera) {
   }, DETECT_TIMEOUT);
 
   logger.info("[Ring] start stream");
+}
+
+export function setupCameraEventListeners(camera: RingCamera) {
+  camera.onNewNotification.subscribe((notification) => {
+    const category = notification.android_config
+      .category as PushNotificationAction;
+    logger.info(`[Ring] Notification: ${category}`);
+
+    if (category === PushNotificationAction.Motion) {
+      void startFaceRecognition(camera).catch((err) => {
+        logger.error("processStream:", err);
+      });
+      void triggerWebhook({
+        type: "notification",
+        event: "motion",
+      });
+    } else if (category === PushNotificationAction.Ding) {
+      void triggerWebhook({
+        type: "notification",
+        event: "ding",
+      });
+    }
+  });
 }
 
 async function writeDebugFile(imageBuffer: Buffer, suffix: string) {

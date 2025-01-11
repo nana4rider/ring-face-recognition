@@ -1,7 +1,11 @@
 import { jest } from "@jest/globals";
 import assert from "assert";
-import { RingApi, RingCamera } from "ring-client-api";
-import {
+import type {
+  PushNotificationDingV2,
+  RingApi,
+  RingCamera,
+} from "ring-client-api";
+import type {
   FfmpegOptions,
   StreamingSession,
 } from "ring-client-api/lib/streaming/streaming-session";
@@ -51,12 +55,26 @@ jest.unstable_mockModule("@/util/imageUtil", () => ({
   composeImages: mockComposeImages,
 }));
 
-jest.unstable_mockModule("ring-client-api", () => ({
-  RingApi: jest.fn().mockImplementation(() => ({
-    getCameras: mockGetCameras,
-    onRefreshTokenUpdated: { subscribe: mockRefreshTokenSubscribe },
-  })),
-}));
+const PushNotificationAction = {
+  Motion: "motion",
+  Ding: "ding",
+};
+jest.unstable_mockModule("ring-client-api", () => {
+  return {
+    RingApi: jest.fn().mockImplementation(() => ({
+      getCameras: mockGetCameras,
+      onRefreshTokenUpdated: { subscribe: mockRefreshTokenSubscribe },
+    })),
+    PushNotificationAction,
+  };
+});
+
+const env = process.env;
+beforeEach(() => {
+  jest.resetModules();
+  jest.clearAllMocks();
+  process.env = { ...env };
+});
 
 describe("initializeRingCamera", () => {
   test("カメラIDが設定されている場合、指定されたカメラを返す", async () => {
@@ -109,6 +127,121 @@ describe("initializeRingCamera", () => {
       expect.stringMatching(/refreshToken/),
       mockNewRefreshToken,
     );
+  });
+});
+
+describe("setupCameraEventListeners", () => {
+  test("Motionイベントで顔認識とWebhookがトリガーされる", async () => {
+    const mockSubscribe =
+      jest.fn<RingCamera["onNewNotification"]["subscribe"]>();
+    const mockCamera = {
+      onNewNotification: { subscribe: mockSubscribe },
+      streamVideo: mockStreamVideo,
+    } as unknown as RingCamera;
+
+    const { setupCameraEventListeners } = await import("@/service/ring");
+
+    setupCameraEventListeners(mockCamera);
+
+    // simulate Motion notification
+    const notification = {
+      android_config: { category: PushNotificationAction.Motion },
+    } as PushNotificationDingV2;
+    const subscribeCallback = mockSubscribe.mock.calls[0][0]!;
+    subscribeCallback(notification);
+
+    expect(mockStreamVideo).toHaveBeenCalledTimes(1);
+    expect(mockTriggerWebhook).toHaveBeenCalledWith({
+      type: "notification",
+      event: "motion",
+    });
+  });
+
+  test("顔認識でエラーが発生しても例外がスローされない", async () => {
+    const mockSubscribe =
+      jest.fn<RingCamera["onNewNotification"]["subscribe"]>();
+    const mockCamera = {
+      onNewNotification: { subscribe: mockSubscribe },
+      streamVideo: mockStreamVideo,
+    } as unknown as RingCamera;
+
+    mockStreamVideo.mockReturnValue(Promise.reject(Error("test error")));
+
+    const { setupCameraEventListeners } = await import("@/service/ring");
+
+    setupCameraEventListeners(mockCamera);
+
+    // simulate Motion notification
+    const notification = {
+      android_config: { category: PushNotificationAction.Motion },
+    } as PushNotificationDingV2;
+    const subscribeCallback = mockSubscribe.mock.calls[0][0]!;
+
+    const actual = () => subscribeCallback(notification);
+    expect(actual).not.toThrow();
+  });
+
+  test("DingイベントでWebhookがトリガーされる", async () => {
+    const mockSubscribe =
+      jest.fn<RingCamera["onNewNotification"]["subscribe"]>();
+    const mockCamera = {
+      onNewNotification: { subscribe: mockSubscribe },
+      streamVideo: mockStreamVideo,
+    } as unknown as RingCamera;
+
+    const { setupCameraEventListeners } = await import("@/service/ring");
+
+    setupCameraEventListeners(mockCamera);
+
+    // simulate Ding notification
+    const notification = {
+      android_config: { category: PushNotificationAction.Ding },
+    } as PushNotificationDingV2;
+    const subscribeCallback = mockSubscribe.mock.calls[0][0]!;
+    subscribeCallback(notification);
+
+    expect(mockStreamVideo).not.toHaveBeenCalled();
+    expect(mockTriggerWebhook).toHaveBeenCalledWith({
+      type: "notification",
+      event: "ding",
+    });
+  });
+
+  test("未知のイベントカテゴリーでは何もしない", async () => {
+    const mockSubscribe =
+      jest.fn<RingCamera["onNewNotification"]["subscribe"]>();
+    const mockCamera = {
+      onNewNotification: { subscribe: mockSubscribe },
+      streamVideo: mockStreamVideo,
+    } as unknown as RingCamera;
+
+    const { setupCameraEventListeners } = await import("@/service/ring");
+
+    setupCameraEventListeners(mockCamera);
+
+    // simulate an unknown notification
+    const notification = {
+      android_config: { category: "UnknownEvent" },
+    } as PushNotificationDingV2;
+    const subscribeCallback = mockSubscribe.mock.calls[0][0]!;
+    subscribeCallback(notification);
+
+    expect(mockStreamVideo).not.toHaveBeenCalled();
+    expect(mockTriggerWebhook).not.toHaveBeenCalled();
+  });
+
+  test("subscribeが正しく呼び出される", async () => {
+    const mockSubscribe = jest.fn();
+    const mockCamera = {
+      onNewNotification: { subscribe: mockSubscribe },
+    } as unknown as RingCamera;
+
+    const { setupCameraEventListeners } = await import("@/service/ring");
+
+    setupCameraEventListeners(mockCamera);
+
+    expect(mockSubscribe).toHaveBeenCalledTimes(1);
+    expect(mockSubscribe).toHaveBeenCalledWith(expect.any(Function));
   });
 });
 
@@ -227,12 +360,6 @@ describe("startFaceRecognition", () => {
     await setTimeout(10);
 
     expect(mockComposeImages).not.toHaveBeenCalled();
-  });
-  const env = process.env;
-  beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
-    process.env = { ...env };
   });
 
   test("顔認識ができたらWebhookをトリガーする", async () => {

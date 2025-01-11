@@ -1,10 +1,12 @@
 import pluginJs from "@eslint/js";
+import jest from "eslint-plugin-jest";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   { files: ["src/**/*.ts"] },
-  { ignores: ["dist", "coverage", "*.js", "*.ts"] },
+  { ignores: ["dist", "coverage", "*.js"] },
   { languageOptions: { globals: globals.node } },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -31,6 +33,15 @@ export default [
           destructuredArrayIgnorePattern: "^_",
         },
       ],
+    },
+  },
+  {
+    files: ["__tests__/**/*.ts"],
+    ...jest.configs["flat/recommended"],
+    rules: {
+      ...jest.configs["flat/recommended"].rules,
+      "@typescript-eslint/unbound-method": "off",
+      "jest/unbound-method": "error",
     },
   },
 ];
