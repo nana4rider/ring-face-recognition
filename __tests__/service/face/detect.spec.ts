@@ -80,8 +80,12 @@ describe("detectFace", () => {
     expect(result).toBeUndefined();
   });
 
-  test("DETECT_MIN_SIZEとDETECT_CONFIDENCEがリクエストに反映される", async () => {
+  test("オプションがリクエストに反映される", async () => {
     process.env.DETECT_MIN_SIZE = "100";
+    process.env.DETECT_START_X = "200";
+    process.env.DETECT_START_Y = "300";
+    process.env.DETECT_END_X = "400";
+    process.env.DETECT_END_Y = "500";
     process.env.DETECT_CONFIDENCE = "0.8";
 
     const mockImageBuffer = Buffer.from("mockBuffer");
@@ -98,6 +102,10 @@ describe("detectFace", () => {
 
     const expectedFormData = new FormData();
     expectedFormData.append("minSize", "100");
+    expectedFormData.append("startX", "200");
+    expectedFormData.append("startY", "300");
+    expectedFormData.append("endX", "400");
+    expectedFormData.append("endY", "500");
     expectedFormData.append("confidence", "0.8");
     expectedFormData.append("file", mockBlob, "image.jpg");
 
