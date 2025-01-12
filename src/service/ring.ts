@@ -7,8 +7,7 @@ import assert from "assert";
 import dayjs from "dayjs";
 import env from "env-var";
 import { writeFileSync } from "fs";
-import { readFile, rm, writeFile } from "fs/promises";
-import { glob } from "glob";
+import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { PushNotificationAction, RingApi, RingCamera } from "ring-client-api";
 
@@ -72,7 +71,12 @@ export async function initializeRingCamera(): Promise<RingCamera> {
 }
 
 export async function startFaceRecognition(camera: RingCamera) {
-  void removeDebugFiles();
+  let debugDir = "";
+  /* istanbul ignore next */
+  if (logger.isDebugEnabled()) {
+    debugDir = dayjs().format("YYYY-MM-DD-HH-mm-ss");
+    await mkdir(path.join("snapshot", debugDir));
+  }
 
   const faceImageBuffers: Buffer[] = [];
   let timeoutTimerId: NodeJS.Timeout | undefined = undefined;
@@ -81,7 +85,7 @@ export async function startFaceRecognition(camera: RingCamera) {
     logger.info(`receive buffer length: ${imageBuffer.length}`);
     const faceBuffer = await detectFace(imageBuffer);
 
-    void writeDebugFile(imageBuffer, faceBuffer ? "ok" : "ng");
+    void writeDebugFile(imageBuffer, debugDir, faceBuffer ? "ok" : "ng");
 
     if (!faceBuffer) return;
     logger.info("[Face Detector] 顔検出: OK");
@@ -105,7 +109,7 @@ export async function startFaceRecognition(camera: RingCamera) {
     const compositeFaceImageBuffer = await composeImages(faceImageBuffers);
     logger.info("画像の合成完了");
 
-    void writeDebugFile(compositeFaceImageBuffer, "comp");
+    void writeDebugFile(compositeFaceImageBuffer, debugDir, "comp");
 
     const face = await recognizeFace(compositeFaceImageBuffer);
     if (!face) return;
@@ -162,19 +166,15 @@ export function setupCameraEventListeners(camera: RingCamera) {
   });
 }
 
-async function writeDebugFile(imageBuffer: Buffer, suffix: string) {
+async function writeDebugFile(
+  imageBuffer: Buffer,
+  targetDir: string,
+  suffix: string,
+) {
   /* istanbul ignore next */
   if (logger.isDebugEnabled()) {
     const timestamp = dayjs().format("YYYY-MM-DD-HH-mm-ss-SSS");
     const fileName = `${timestamp}_${suffix}.jpg`;
-    await writeFile(path.join("snapshot", fileName), imageBuffer);
-  }
-}
-
-async function removeDebugFiles() {
-  /* istanbul ignore next */
-  if (logger.isDebugEnabled()) {
-    const snapshotFileNames = await glob("snapshot/*.jpg");
-    await Promise.all(snapshotFileNames.map((fileName) => rm(fileName)));
+    await writeFile(path.join("snapshot", targetDir, fileName), imageBuffer);
   }
 }

@@ -14,8 +14,7 @@ import { setTimeout } from "timers/promises";
 const mockReadFile = jest.fn();
 const mockWriteFileSync = jest.fn();
 const mockWriteFile = jest.fn();
-const mockRm = jest.fn();
-const mockGlob = jest.fn();
+const mockMkdir = jest.fn();
 const mockDetectFace = jest.fn();
 const mockRecognizeFace = jest.fn();
 const mockTriggerWebhook = jest.fn();
@@ -28,15 +27,11 @@ const mockGetCameras = jest.fn();
 jest.unstable_mockModule("fs/promises", () => ({
   readFile: mockReadFile,
   writeFile: mockWriteFile,
-  rm: mockRm,
+  mkdir: mockMkdir,
 }));
 
 jest.unstable_mockModule("fs", () => ({
   writeFileSync: mockWriteFileSync,
-}));
-
-jest.unstable_mockModule("glob", () => ({
-  glob: mockGlob,
 }));
 
 jest.unstable_mockModule("@/service/face/detect", () => ({
