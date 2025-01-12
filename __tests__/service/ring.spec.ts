@@ -368,8 +368,9 @@ describe("startFaceRecognition", () => {
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
     const mockFace = {
-      FaceId: "mockFaceId",
-      ExternalImageId: "mockImageId",
+      FaceId: "testFaceId",
+      ImageId: "testImageId",
+      ExternalImageId: "testExternalImageId",
     };
 
     mockReadFile.mockReturnValue(Promise.resolve("mockRefreshToken"));
@@ -395,8 +396,53 @@ describe("startFaceRecognition", () => {
     expect(mockTriggerWebhook).toHaveBeenCalledWith({
       type: "rekognition",
       result: {
-        faceId: "mockFaceId",
-        imageId: "mockImageId",
+        faceId: "testFaceId",
+        imageId: "testImageId",
+        externalImageId: "testExternalImageId",
+      },
+    });
+  });
+
+  test("ExternalImageIdがない場合はnullで送信する", async () => {
+    process.env.SKIP_IMAGE_BUFFER_COUNT = "0";
+    process.env.REKOGNITION_FACE_COUNT = "1";
+
+    const mockCamera = {
+      streamVideo: mockStreamVideo,
+    } as unknown as RingCamera;
+    const mockFace = {
+      FaceId: "testFaceId",
+      ImageId: "testImageId",
+    };
+
+    mockReadFile.mockReturnValue(Promise.resolve("mockRefreshToken"));
+    mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
+      setImmediate(() => {
+        assert(options.stdoutCallback);
+        options.stdoutCallback(Buffer.from("mockImageBuffer"));
+      });
+      return Promise.resolve({
+        stop: jest.fn(),
+      }) as unknown as Promise<StreamingSession>;
+    });
+    mockDetectFace.mockReturnValue(
+      Promise.resolve(Buffer.from("mockFaceBuffer")),
+    );
+    mockComposeImages.mockReturnValue(
+      Promise.resolve(Buffer.from("mockCompositeBuffer")),
+    );
+    mockRecognizeFace.mockReturnValue(Promise.resolve(mockFace));
+
+    const { startFaceRecognition } = await import("@/service/ring");
+    await startFaceRecognition(mockCamera);
+    await setTimeout(10);
+
+    expect(mockTriggerWebhook).toHaveBeenCalledWith({
+      type: "rekognition",
+      result: {
+        faceId: "testFaceId",
+        imageId: "testImageId",
+        externalImageId: null,
       },
     });
   });
