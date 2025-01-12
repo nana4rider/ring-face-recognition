@@ -34,5 +34,8 @@ export default async function initializeHttpServer() {
     logger.info("[HTTP] closed");
   };
 
+  // health check
+  setEndpoint("/health", () => ({}));
+
   return { setEndpoint, close };
 }

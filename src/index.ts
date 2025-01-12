@@ -12,8 +12,6 @@ async function main() {
 
   const http = await initializeHttpServer();
 
-  http.setEndpoint("/health", () => ({}));
-
   const shutdownHandler = async () => {
     logger.info("shutdown");
     await http.close();

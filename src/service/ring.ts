@@ -113,14 +113,17 @@ export async function startFaceRecognition(camera: RingCamera) {
 
     const face = await recognizeFace(compositeFaceImageBuffer);
     if (!face) return;
+
     const { FaceId: faceId, ExternalImageId: imageId } = face;
+    assert(faceId);
+    assert(imageId);
 
     logger.info(`[Rekognition] recognize: ${JSON.stringify(face)}`);
     await triggerWebhook({
       type: "rekognition",
       result: {
-        ...(faceId ? { faceId } : undefined),
-        ...(imageId ? { imageId } : undefined),
+        faceId,
+        imageId,
       },
     });
   };
