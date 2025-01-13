@@ -1,77 +1,43 @@
-import { jest } from "@jest/globals";
+import env from "@/env";
+import detectFace from "@/service/face/detect";
+import { bufferToBlob } from "@/util/dataTransformUtil";
+import { MutableEnv } from "jest.setup";
 
-const mockFetchResponse = jest.fn<() => Response>();
+const mockFetchResponse = jest.fn();
 global.fetch = jest
-  .fn<typeof global.fetch>()
+  .fn()
   .mockImplementation((_input: RequestInfo | URL, _init?: RequestInit) => {
     return Promise.resolve(mockFetchResponse());
   });
 
-const mockBlobToBuffer = jest.fn();
-const mockBufferToBlob = jest.fn();
-jest.unstable_mockModule("@/util/dataTransformUtil", () => ({
-  blobToBuffer: mockBlobToBuffer,
-  bufferToBlob: mockBufferToBlob,
-}));
-
 describe("detectFace", () => {
-  const env = process.env;
-  const FACE_DETECTOR_API = "https://example.com/facedetector";
-  const DETECT_MIN_SIZE = 80;
-  const DETECT_CONFIDENCE = 0.9;
-
-  beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...env };
-    process.env.FACE_DETECTOR_API = FACE_DETECTOR_API;
-    process.env.DETECT_MIN_SIZE = DETECT_MIN_SIZE.toString();
-    process.env.DETECT_CONFIDENCE = DETECT_CONFIDENCE.toString();
-  });
-
   test("API呼び出しが成功した場合、バッファを返す", async () => {
-    const mockImageBuffer = Buffer.from("mockBuffer");
-    const mockBlob = new Blob();
-    const mockReturnedBuffer = Buffer.from("returnedBuffer");
-
-    mockBufferToBlob.mockReturnValueOnce(mockBlob);
     mockFetchResponse.mockReturnValueOnce({
       ok: true,
-      blob: () => Promise.resolve(mockBlob),
+      blob: () => Promise.resolve(new Blob(["responseData"])),
     } as Response);
-    mockBlobToBuffer.mockReturnValueOnce(mockReturnedBuffer);
+    const result = await detectFace(Buffer.from("requestData"));
 
-    const { default: detectFace } = await import("@/service/face/detect");
-    const result = await detectFace(mockImageBuffer);
-
-    expect(mockBufferToBlob).toHaveBeenCalledWith(mockImageBuffer);
     expect(global.fetch).toHaveBeenCalledWith(
-      `${FACE_DETECTOR_API}/detect`,
+      `${process.env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
         body: expect.any(FormData) as FormData,
       }),
     );
-    expect(mockBlobToBuffer).toHaveBeenCalledWith(mockBlob);
-    expect(result).toBe(mockReturnedBuffer);
+    expect(result).toEqual(Buffer.from("responseData"));
   });
 
   test("API呼び出しが失敗した場合、undefinedを返す", async () => {
-    const mockImageBuffer = Buffer.from("mockBuffer");
-    const mockBlob = new Blob();
-    const mockErrorResponse = { error: "Mock error" };
-
-    mockBufferToBlob.mockReturnValueOnce(mockBlob);
     mockFetchResponse.mockReturnValueOnce({
       ok: false,
-      json: () => Promise.resolve(mockErrorResponse),
+      json: () => Promise.resolve({ error: "Mock error" }),
     } as Response);
 
-    const { default: detectFace } = await import("@/service/face/detect");
-    const result = await detectFace(mockImageBuffer);
+    const result = await detectFace(Buffer.from("requestData"));
 
-    expect(mockBufferToBlob).toHaveBeenCalledWith(mockImageBuffer);
     expect(global.fetch).toHaveBeenCalledWith(
-      `${FACE_DETECTOR_API}/detect`,
+      `${process.env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
         body: expect.any(FormData) as FormData,
@@ -81,24 +47,21 @@ describe("detectFace", () => {
   });
 
   test("オプションがリクエストに反映される", async () => {
-    process.env.DETECT_MIN_SIZE = "100";
-    process.env.DETECT_START_X = "200";
-    process.env.DETECT_START_Y = "300";
-    process.env.DETECT_END_X = "400";
-    process.env.DETECT_END_Y = "500";
-    process.env.DETECT_CONFIDENCE = "0.8";
+    (env as MutableEnv).DETECT_MIN_SIZE = 100;
+    (env as MutableEnv).DETECT_START_X = 200;
+    (env as MutableEnv).DETECT_START_Y = 300;
+    (env as MutableEnv).DETECT_END_X = 400;
+    (env as MutableEnv).DETECT_END_Y = 500;
+    (env as MutableEnv).DETECT_CONFIDENCE = 0.8;
 
-    const mockImageBuffer = Buffer.from("mockBuffer");
-    const mockBlob = new Blob();
+    const requestData = Buffer.from("requestData");
 
-    mockBufferToBlob.mockReturnValueOnce(mockBlob);
     mockFetchResponse.mockReturnValueOnce({
       ok: true,
-      blob: () => Promise.resolve(mockBlob),
+      blob: () => Promise.resolve(new Blob(["responseData"])),
     } as Response);
 
-    const { default: detectFace } = await import("@/service/face/detect");
-    await detectFace(mockImageBuffer);
+    await detectFace(requestData);
 
     const expectedFormData = new FormData();
     expectedFormData.append("minSize", "100");
@@ -107,10 +70,10 @@ describe("detectFace", () => {
     expectedFormData.append("endX", "400");
     expectedFormData.append("endY", "500");
     expectedFormData.append("confidence", "0.8");
-    expectedFormData.append("file", mockBlob, "image.jpg");
+    expectedFormData.append("file", bufferToBlob(requestData), "image.jpg");
 
     expect(global.fetch).toHaveBeenCalledWith(
-      `${FACE_DETECTOR_API}/detect`,
+      `${process.env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
         body: expectedFormData,

@@ -1,38 +1,27 @@
-import { jest } from "@jest/globals";
+import triggerWebhook from "@/service/webhook";
 
-const mockResponse = jest.fn<() => Response>();
-
+const mockFetchResponse = jest.fn();
 global.fetch = jest
-  .fn<typeof global.fetch>()
+  .fn()
   .mockImplementation((_input: RequestInfo | URL, _init?: RequestInit) => {
-    return Promise.resolve(mockResponse());
+    return Promise.resolve(mockFetchResponse());
   });
 
 describe("triggerWebhook", () => {
-  const WEBHOOK = "https://example.com/webhook";
-
-  const env = process.env;
-  beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...env };
-  });
-
   test("ok: true の場合、正常に完了する", async () => {
-    process.env.WEBHOOK = WEBHOOK;
     const mockPayload = { key: "value" };
 
-    mockResponse.mockReturnValueOnce({
+    mockFetchResponse.mockReturnValueOnce({
       ok: true,
       status: 200,
       text: () => Promise.resolve(""),
     } as Response);
 
-    const { default: triggerWebhook } = await import("@/service/webhook");
     const actual = triggerWebhook(mockPayload);
 
     await expect(actual).resolves.toBeUndefined();
 
-    expect(global.fetch).toHaveBeenCalledWith(WEBHOOK, {
+    expect(global.fetch).toHaveBeenCalledWith(process.env.WEBHOOK, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -42,16 +31,14 @@ describe("triggerWebhook", () => {
   });
 
   test("ok: false の場合、例外を投げる", async () => {
-    process.env.WEBHOOK = WEBHOOK;
     const mockPayload = { key: "value" };
 
-    mockResponse.mockReturnValueOnce({
+    mockFetchResponse.mockReturnValueOnce({
       ok: false,
       status: 500,
       text: () => Promise.resolve("Error Message"),
     } as Response);
 
-    const { default: triggerWebhook } = await import("@/service/webhook");
     const actual = triggerWebhook(mockPayload);
 
     await expect(actual).rejects.toThrow("Error Message");
