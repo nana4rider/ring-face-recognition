@@ -1,3 +1,4 @@
+import env from "@/env";
 import logger from "@/logger";
 import detectFace from "@/service/face/detect";
 import recognizeFace from "@/service/face/recognize";
@@ -5,31 +6,11 @@ import triggerWebhook from "@/service/webhook";
 import { composeImages } from "@/util/imageUtil";
 import assert from "assert";
 import dayjs from "dayjs";
-import env from "env-var";
 import { writeFileSync } from "fs";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { PushNotificationAction, RingApi, RingCamera } from "ring-client-api";
 
-/** 指定がなければ1番目のカメラを使う */
-const RING_CAMERA_ID = env.get("RING_CAMERA_ID").asIntPositive();
-/** リフレッシュトークンのパス */
-const REFRESH_TOKEN_PATH = env
-  .get("REFRESH_TOKEN_PATH")
-  .default(".refreshToken")
-  .asString();
-/** ビデオストリームを開始してから自動終了するまでの時間 */
-const DETECT_TIMEOUT = env.get("DETECT_TIMEOUT").default(15000).asIntPositive();
-/** Rekognition APIに渡す顔の数 */
-const REKOGNITION_FACE_COUNT = env
-  .get("REKOGNITION_FACE_COUNT")
-  .default(3)
-  .asIntPositive();
-/** スキップする画像の回数(接続して最初の方の画像は壊れていることが多いため指定) */
-const SKIP_IMAGE_BUFFER_COUNT = env
-  .get("SKIP_IMAGE_BUFFER_COUNT")
-  .default(3)
-  .asIntPositive();
 /** FFmpegの設定 */
 const STREAM_VIDEO_CONFIG = [
   // FPS
@@ -48,7 +29,7 @@ const STREAM_VIDEO_CONFIG = [
 ];
 
 export async function initializeRingCamera(): Promise<RingCamera> {
-  const refreshToken = (await readFile(REFRESH_TOKEN_PATH, "utf-8")).trim();
+  const refreshToken = (await readFile(env.REFRESH_TOKEN_PATH, "utf-8")).trim();
 
   const ringApi = new RingApi({
     refreshToken,
@@ -56,13 +37,13 @@ export async function initializeRingCamera(): Promise<RingCamera> {
 
   ringApi.onRefreshTokenUpdated.subscribe(({ newRefreshToken }) => {
     logger.info("update Refresh Token");
-    writeFileSync(REFRESH_TOKEN_PATH, newRefreshToken);
+    writeFileSync(env.REFRESH_TOKEN_PATH, newRefreshToken);
   });
 
   const cameras = await ringApi.getCameras();
-  const camera = !RING_CAMERA_ID
+  const camera = !env.RING_CAMERA_ID
     ? cameras[0]
-    : cameras.find(({ id }) => id === RING_CAMERA_ID);
+    : cameras.find(({ id }) => id === env.RING_CAMERA_ID);
   if (!camera) {
     throw new Error("Camera Not Found.");
   }
@@ -95,7 +76,7 @@ export async function startFaceRecognition(camera: RingCamera) {
       `[Face Detector] faceBuffers length: ${faceImageBuffers.length}`,
     );
 
-    if (faceImageBuffers.length !== REKOGNITION_FACE_COUNT) {
+    if (faceImageBuffers.length !== env.REKOGNITION_FACE_COUNT) {
       return;
     }
 
@@ -134,7 +115,7 @@ export async function startFaceRecognition(camera: RingCamera) {
     output: STREAM_VIDEO_CONFIG,
     stdoutCallback: (imageBuffer) => {
       callbackCounter++;
-      if (timeoutTimerId && callbackCounter > SKIP_IMAGE_BUFFER_COUNT) {
+      if (timeoutTimerId && callbackCounter > env.SKIP_IMAGE_BUFFER_COUNT) {
         void handleImageBuffer(imageBuffer);
       }
     },
@@ -142,7 +123,7 @@ export async function startFaceRecognition(camera: RingCamera) {
 
   timeoutTimerId = setTimeout(() => {
     videoStream.stop();
-  }, DETECT_TIMEOUT);
+  }, env.DETECT_TIMEOUT);
 
   logger.info("[Ring] start stream");
 }

@@ -1,3 +1,4 @@
+import env from "@/env";
 import logger from "@/logger";
 import {
   Face,
@@ -5,13 +6,6 @@ import {
   SearchFacesByImageCommand,
   SearchFacesByImageCommandOutput,
 } from "@aws-sdk/client-rekognition";
-import env from "env-var";
-
-const AWS_REKOGNITION_COLLECTION_ID = env
-  .get("AWS_REKOGNITION_COLLECTION_ID")
-  .required()
-  .asString();
-const FACE_MATCH_THRESHOLD = env.get("FACE_MATCH_THRESHOLD").asIntPositive();
 
 const rekognition = new RekognitionClient();
 
@@ -21,8 +15,8 @@ export default async function recognizeFace(
   logger.info("[Rekognition] 開始");
 
   const command = new SearchFacesByImageCommand({
-    CollectionId: AWS_REKOGNITION_COLLECTION_ID,
-    FaceMatchThreshold: FACE_MATCH_THRESHOLD,
+    CollectionId: env.AWS_REKOGNITION_COLLECTION_ID,
+    FaceMatchThreshold: env.FACE_MATCH_THRESHOLD,
     Image: { Bytes: imageBuffer },
     MaxFaces: 1,
   });
