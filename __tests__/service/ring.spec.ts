@@ -71,7 +71,6 @@ jest.mock("ring-client-api", () => {
 });
 
 beforeEach(() => {
-  jest.resetModules();
   jest.clearAllMocks();
 });
 
