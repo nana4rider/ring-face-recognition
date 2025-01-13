@@ -15,7 +15,6 @@ import { MutableEnv } from "jest.setup";
 import {
   PushNotificationAction,
   PushNotificationDingV2,
-  RingApi,
   RingCamera,
   default as ring,
 } from "ring-client-api";
@@ -123,7 +122,6 @@ describe("initializeRingCamera", () => {
         callback({
           newRefreshToken: mockNewRefreshToken,
         });
-        return {} as ReturnType<RingApi["onRefreshTokenUpdated"]["subscribe"]>;
       },
     );
 
@@ -201,7 +199,6 @@ describe("setupCameraEventListeners", () => {
 
     setupCameraEventListeners(mockCamera);
 
-    // simulate Ding notification
     const notification = {
       android_config: { category: PushNotificationAction.Ding },
     } as PushNotificationDingV2;
