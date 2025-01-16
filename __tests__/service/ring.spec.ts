@@ -380,10 +380,10 @@ describe("startFaceRecognition", () => {
     const mockImageBuffer = Buffer.from("mockImageBuffer");
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
-    const mockFace = {
-      FaceId: "testFaceId",
-      ImageId: "testImageId",
-      ExternalImageId: "testExternalImageId",
+    const mockRecognizeFace = {
+      faceId: "testFaceId",
+      imageId: "testImageId",
+      externalImageId: "testExternalImageId",
     };
 
     const mockReadFile = jest.spyOn(fs, "readFile");
@@ -400,7 +400,7 @@ describe("startFaceRecognition", () => {
     });
     (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
     (composeImages as jest.Mock).mockResolvedValue(mockCompositeBuffer);
-    (recognizeFace as jest.Mock).mockResolvedValue(mockFace);
+    (recognizeFace as jest.Mock).mockResolvedValue(mockRecognizeFace);
 
     await startFaceRecognition(mockCamera);
     await setTimeout(10);
@@ -409,55 +409,62 @@ describe("startFaceRecognition", () => {
     expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
     expect(recognizeFace).toHaveBeenCalledWith(mockCompositeBuffer);
     expect(triggerWebhook).toHaveBeenCalledWith({
-      type: "rekognition",
-      result: {
-        faceId: "testFaceId",
-        imageId: "testImageId",
-        externalImageId: "testExternalImageId",
-      },
+      type: "recognition",
+      result: mockRecognizeFace,
     });
   });
 
-  test("ExternalImageIdがない場合はnullで送信する", async () => {
+  test("顔認識でエラーが発生したらリトライする", async () => {
     (env as MutableEnv).SKIP_IMAGE_BUFFER_COUNT = 0;
     (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
 
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
+    const mockImageBuffer = Buffer.from("mockImageBuffer");
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
-    const mockFace = {
-      FaceId: "testFaceId",
-      ImageId: "testImageId",
+    const mockRecognizeFace = {
+      faceId: "testFaceId",
+      imageId: "testImageId",
+      externalImageId: "testExternalImageId",
     };
 
     const mockReadFile = jest.spyOn(fs, "readFile");
     mockReadFile.mockResolvedValue("mockRefreshToken");
 
+    let executeStdoutCallback: () => void;
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
-      setImmediate(() => {
-        assert(options.stdoutCallback);
-        options.stdoutCallback(Buffer.from("mockImageBuffer"));
-      });
+      executeStdoutCallback = () => {
+        setImmediate(() => {
+          assert(options.stdoutCallback);
+          options.stdoutCallback(mockImageBuffer);
+        });
+      };
+      executeStdoutCallback();
       return Promise.resolve({
         stop: jest.fn(),
       }) as unknown as Promise<StreamingSession>;
     });
     (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
     (composeImages as jest.Mock).mockResolvedValue(mockCompositeBuffer);
-    (recognizeFace as jest.Mock).mockResolvedValue(mockFace);
+    (recognizeFace as jest.Mock)
+      .mockImplementationOnce(() => {
+        executeStdoutCallback();
+        return Promise.reject(new Error("recognition error"));
+      })
+      .mockResolvedValueOnce(mockRecognizeFace);
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(10);
+    await setTimeout(100);
 
+    expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
+    expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
+    expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
+    expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
     expect(triggerWebhook).toHaveBeenCalledWith({
-      type: "rekognition",
-      result: {
-        faceId: "testFaceId",
-        imageId: "testImageId",
-        externalImageId: null,
-      },
+      type: "recognition",
+      result: mockRecognizeFace,
     });
   });
 

@@ -1,17 +1,21 @@
 import env from "@/env";
 import logger from "@/logger";
 import {
-  Face,
   RekognitionClient,
   SearchFacesByImageCommand,
-  SearchFacesByImageCommandOutput,
 } from "@aws-sdk/client-rekognition";
 
 const rekognition = new RekognitionClient();
 
+export type RecognizeResult = {
+  faceId: string;
+  imageId: string;
+  externalImageId: string | null;
+};
+
 export default async function recognizeFace(
   imageBuffer: Buffer,
-): Promise<Face | undefined> {
+): Promise<RecognizeResult | undefined> {
   logger.info("[Rekognition] 開始");
 
   const command = new SearchFacesByImageCommand({
@@ -21,13 +25,7 @@ export default async function recognizeFace(
     MaxFaces: 1,
   });
 
-  let result: SearchFacesByImageCommandOutput;
-  try {
-    result = await rekognition.send(command);
-  } catch (err) {
-    logger.error("[Rekognition] エラー", err);
-    return undefined;
-  }
+  const result = await rekognition.send(command);
 
   const {
     FaceMatches: matches,
@@ -48,5 +46,13 @@ export default async function recognizeFace(
     `[Rekognition] Similarity: ${face.Similarity} / Confidence: ${face.Face.Confidence}`,
   );
 
-  return face.Face;
+  const faceId = face.Face.FaceId!;
+  const imageId = face.Face.ImageId!;
+  const externalImageId = face.Face.ExternalImageId ?? null;
+
+  return {
+    faceId,
+    imageId,
+    externalImageId,
+  };
 }

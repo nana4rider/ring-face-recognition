@@ -1,7 +1,7 @@
 import env from "@/env";
 import logger from "@/logger";
 import detectFace from "@/service/face/detect";
-import recognizeFace from "@/service/face/recognize";
+import recognizeFace, { RecognizeResult } from "@/service/face/recognize";
 import triggerWebhook from "@/service/webhook";
 import { composeImages } from "@/util/imageUtil";
 import assert from "assert";
@@ -80,33 +80,36 @@ export async function startFaceRecognition(camera: RingCamera) {
       return;
     }
 
-    logger.info("stop stream");
-    assert(timeoutTimerId);
-    clearTimeout(timeoutTimerId);
-    timeoutTimerId = undefined;
-    videoStream.stop();
-
     logger.info("画像の合成開始");
     const compositeFaceImageBuffer = await composeImages(faceImageBuffers);
     logger.info("画像の合成完了");
 
     void writeDebugFile(compositeFaceImageBuffer, debugDir, "comp");
 
-    const face = await recognizeFace(compositeFaceImageBuffer);
-    if (!face) return;
+    let result: RecognizeResult | undefined;
+    try {
+      result = await recognizeFace(compositeFaceImageBuffer);
+    } catch (err) {
+      // Face Detectorは顔と認識したが外部APIでは検出されない = 画像が荒い可能性が高い
+      // より後の画像の方が信用が高いので、1から収集する
+      faceImageBuffers.length = 0;
+      logger.warn("[Recognition] Failed:", err);
+      return;
+    }
 
-    const faceId = face.FaceId!;
-    const imageId = face.ImageId!;
-    const externalImageId = face.ExternalImageId ?? null;
+    // 顔認識が成功したらストリームを停止する
+    logger.info("stop stream");
+    assert(timeoutTimerId);
+    clearTimeout(timeoutTimerId);
+    timeoutTimerId = undefined;
+    videoStream.stop();
 
-    logger.info(`[Rekognition] recognize: ${JSON.stringify(face)}`);
+    if (!result) return;
+
+    logger.info(`[Recognition] recognize: ${JSON.stringify(result)}`);
     await triggerWebhook({
-      type: "rekognition",
-      result: {
-        faceId,
-        imageId,
-        externalImageId,
-      },
+      type: "recognition",
+      result,
     });
   };
 

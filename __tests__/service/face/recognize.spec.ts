@@ -13,17 +13,17 @@ describe("recognizeFace", () => {
       "send",
     );
     const mockImageBuffer = Buffer.from("mockBuffer");
-    const mockFace = {
-      FaceId: "12345",
-      Confidence: 98,
-    };
-    const mockSimilarity = 97;
 
     mockSend.mockResolvedValue({
       FaceMatches: [
         {
-          Face: mockFace,
-          Similarity: mockSimilarity,
+          Face: {
+            FaceId: "testFaceId",
+            ImageId: "testImageId",
+            ExternalImageId: "externalImageId",
+            Confidence: 98,
+          },
+          Similarity: 97,
         },
       ],
       SearchedFaceConfidence: 99,
@@ -41,26 +41,51 @@ describe("recognizeFace", () => {
         },
       }),
     );
-    expect(result).toEqual(mockFace);
+    expect(result).toEqual({
+      faceId: "testFaceId",
+      imageId: "testImageId",
+      externalImageId: "externalImageId",
+    });
   });
 
-  test("顔が見つからないなどでエラーが発生した場合、undefinedを返す", async () => {
+  test("externalImageIdが未設定の場合、nullを返す", async () => {
     const mockSend: jest.SpyInstance = jest.spyOn(
       RekognitionClient.prototype,
       "send",
     );
     const mockImageBuffer = Buffer.from("mockBuffer");
 
-    mockSend.mockReturnValue(
-      Promise.reject(Error("InvalidParameterException")),
-    );
+    mockSend.mockResolvedValue({
+      FaceMatches: [
+        {
+          Face: {
+            FaceId: "testFaceId",
+            ImageId: "testImageId",
+            Confidence: 98,
+          },
+          Similarity: 97,
+        },
+      ],
+      SearchedFaceConfidence: 99,
+    });
 
     const result = await recognizeFace(mockImageBuffer);
 
     expect(mockSend).toHaveBeenCalledWith(
-      expect.any(SearchFacesByImageCommand),
+      expect.objectContaining({
+        input: {
+          CollectionId: "test-collection-id",
+          FaceMatchThreshold: undefined,
+          Image: { Bytes: mockImageBuffer },
+          MaxFaces: 1,
+        },
+      }),
     );
-    expect(result).toBeUndefined();
+    expect(result).toEqual({
+      faceId: "testFaceId",
+      imageId: "testImageId",
+      externalImageId: null,
+    });
   });
 
   test("FaceMatchesが空の場合、undefinedを返す", async () => {
