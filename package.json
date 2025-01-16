@@ -1,6 +1,6 @@
 {
   "name": "ring-face-recognition",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "main": "dist/index.js",
   "type": "module",
   "homepage": "https://github.com/nana4rider/ring-face-recognition",
@@ -20,6 +20,7 @@
     "@aws-sdk/client-rekognition": "^3.723.0",
     "dayjs": "^1.11.13",
     "envalid": "^8.0.0",
+    "fastify": "^5.2.1",
     "gm": "^1.25.0",
     "ring-client-api": "^13.2.1",
     "winston": "^3.17.0"
