@@ -20,7 +20,6 @@ export default async function recognizeFace(
 
   const command = new SearchFacesByImageCommand({
     CollectionId: env.AWS_REKOGNITION_COLLECTION_ID,
-    FaceMatchThreshold: env.FACE_MATCH_THRESHOLD,
     Image: { Bytes: imageBuffer },
     MaxFaces: 1,
   });
@@ -45,6 +44,15 @@ export default async function recognizeFace(
   logger.info(
     `[Rekognition] Similarity: ${face.Similarity} / Confidence: ${face.Face.Confidence}`,
   );
+
+  if (
+    face.Similarity &&
+    env.FACE_MATCH_THRESHOLD &&
+    env.FACE_MATCH_THRESHOLD > face.Similarity
+  ) {
+    // 検出されているが閾値を下回っている場合は、リトライすると通る可能性があるので例外をスローする
+    throw new Error("The similarity score is below the threshold.");
+  }
 
   const faceId = face.Face.FaceId!;
   const imageId = face.Face.ImageId!;

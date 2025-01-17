@@ -130,7 +130,7 @@ describe("recognizeFace", () => {
     expect(result).toBeUndefined();
   });
 
-  test("FACE_MATCH_THRESHOLDが設定されている場合、FaceMatchThresholdを設定する", async () => {
+  test("FACE_MATCH_THRESHOLDが設定されている場合、閾値を下回った検出があると例外をスローする", async () => {
     (env as MutableEnv).FACE_MATCH_THRESHOLD = 90;
 
     const mockSend: jest.SpyInstance = jest.spyOn(
@@ -141,21 +141,12 @@ describe("recognizeFace", () => {
     const mockImageBuffer = Buffer.from("mockBuffer");
 
     mockSend.mockResolvedValue({
-      FaceMatches: [],
-      SearchedFaceConfidence: 0,
+      FaceMatches: [{ Similarity: 80, Face: {} }],
+      SearchedFaceConfidence: 80,
     });
 
-    await recognizeFace(mockImageBuffer);
-    // Number of calls: 0
-    expect(mockSend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        input: {
-          CollectionId: "test-collection-id",
-          FaceMatchThreshold: 90,
-          Image: { Bytes: mockImageBuffer },
-          MaxFaces: 1,
-        },
-      }),
-    );
+    const actual = recognizeFace(mockImageBuffer);
+
+    await expect(actual).rejects.toThrow();
   });
 });
