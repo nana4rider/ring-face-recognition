@@ -1,4 +1,4 @@
-import { cleanEnv, num, port, str } from "envalid";
+import { cleanEnv, num, port, str, url } from "envalid";
 
 const env = cleanEnv(process.env, {
   AWS_REKOGNITION_COLLECTION_ID: str({ desc: "RekognitionのコレクションID" }),
@@ -12,7 +12,7 @@ const env = cleanEnv(process.env, {
     default: 3000,
   }),
   //
-  FACE_DETECTOR_API: str({
+  FACE_DETECTOR_API: url({
     desc: "https://nana4rider.github.io/openapi-ui/?face-detector#/default/post_detect",
     example: "http://face-detector.local",
   }),
@@ -40,7 +40,7 @@ const env = cleanEnv(process.env, {
     desc: "https://nana4rider.github.io/openapi-ui/?face-detector#/default/post_detect",
     default: undefined,
   }),
-  WEBHOOK: str({
+  WEBHOOK: url({
     desc: "イベントを通知するWebhook",
     example: "http://webhool.local",
   }),
