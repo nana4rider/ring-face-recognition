@@ -9,7 +9,10 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "paths": {
-      "@/*": ["src/*"]
-    }
+      "@/*": ["src/*"],
+      "werift-rtp/*": ["node_modules/werift-rtp/lib/common/src"]
+    },
+    "skipLibCheck": true,
+    "importHelpers": true
   }
 }
