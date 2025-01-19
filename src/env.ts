@@ -36,10 +36,6 @@ const env = cleanEnv(process.env, {
     desc: "https://nana4rider.github.io/openapi-ui/?face-detector#/default/post_detect",
     default: undefined,
   }),
-  DETECT_CONFIDENCE: num({
-    desc: "https://nana4rider.github.io/openapi-ui/?face-detector#/default/post_detect",
-    default: undefined,
-  }),
   WEBHOOK: url({
     desc: "イベントを通知するWebhook",
     example: "http://webhool.local",

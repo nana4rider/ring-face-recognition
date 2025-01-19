@@ -20,9 +20,6 @@ export default async function detectFace(
   if (env.DETECT_END_Y) {
     formData.append("endY", env.DETECT_END_Y.toString());
   }
-  if (env.DETECT_CONFIDENCE) {
-    formData.append("confidence", env.DETECT_CONFIDENCE.toString());
-  }
   formData.append("file", reqBlob, "image.jpg");
 
   const response = await fetch(`${env.FACE_DETECTOR_API}/detect`, {

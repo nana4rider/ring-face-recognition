@@ -1,6 +1,6 @@
 {
   "name": "ring-face-recognition",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "main": "dist/index.js",
   "type": "module",
   "homepage": "https://github.com/nana4rider/ring-face-recognition",

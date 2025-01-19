@@ -52,7 +52,6 @@ describe("detectFace", () => {
     (env as MutableEnv).DETECT_START_Y = 300;
     (env as MutableEnv).DETECT_END_X = 400;
     (env as MutableEnv).DETECT_END_Y = 500;
-    (env as MutableEnv).DETECT_CONFIDENCE = 0.8;
 
     const requestData = Buffer.from("requestData");
 
@@ -69,7 +68,6 @@ describe("detectFace", () => {
     expectedFormData.append("startY", "300");
     expectedFormData.append("endX", "400");
     expectedFormData.append("endY", "500");
-    expectedFormData.append("confidence", "0.8");
     expectedFormData.append("file", bufferToBlob(requestData), "image.jpg");
 
     expect(global.fetch).toHaveBeenCalledWith(
