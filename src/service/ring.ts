@@ -11,23 +11,6 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { PushNotificationAction, RingApi, RingCamera } from "ring-client-api";
 
-/** FFmpegの設定 */
-const STREAM_VIDEO_CONFIG = [
-  // FPS
-  "-vf",
-  `fps=3`,
-  // 音なし
-  "-an",
-  // 画像ファイルをpipeにストリームする
-  "-f",
-  "image2pipe",
-  // コーデック
-  "-vcodec",
-  "mjpeg",
-  // 標準出力
-  "pipe:1",
-];
-
 export async function initializeRingCamera(): Promise<RingCamera> {
   const refreshToken = (await readFile(env.REFRESH_TOKEN_PATH, "utf-8")).trim();
 
@@ -115,7 +98,21 @@ export async function startFaceRecognition(camera: RingCamera) {
 
   let callbackCounter = 0;
   const videoStream = await camera.streamVideo({
-    output: STREAM_VIDEO_CONFIG,
+    output: [
+      // FPS
+      "-vf",
+      `fps=${env.VIDEO_STREAM_FPS}`,
+      // 音なし
+      "-an",
+      // 画像ファイルをpipeにストリームする
+      "-f",
+      "image2pipe",
+      // コーデック
+      "-vcodec",
+      "mjpeg",
+      // 標準出力
+      "pipe:1",
+    ],
     stdoutCallback: (imageBuffer) => {
       callbackCounter++;
       if (timeoutTimerId && callbackCounter > env.SKIP_IMAGE_BUFFER_COUNT) {

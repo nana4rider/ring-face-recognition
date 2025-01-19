@@ -60,6 +60,10 @@ const env = cleanEnv(process.env, {
     desc: "スキップする画像の回数(接続して最初の方の画像は壊れていることが多いため指定)",
     default: 3,
   }),
+  VIDEO_STREAM_FPS: num({
+    desc: "ビデオストリームのFPS",
+    default: 3,
+  }),
 });
 
 export default env;
