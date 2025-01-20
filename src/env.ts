@@ -1,4 +1,4 @@
-import { bool, cleanEnv, num, port, str, url } from "envalid";
+import { cleanEnv, num, port, str, url } from "envalid";
 
 const env = cleanEnv(process.env, {
   AWS_REKOGNITION_COLLECTION_ID: str({ desc: "RekognitionのコレクションID" }),
@@ -59,10 +59,6 @@ const env = cleanEnv(process.env, {
   VIDEO_STREAM_FPS: num({
     desc: "ビデオストリームのFPS",
     default: 3,
-  }),
-  USE_EXTERNAL_MOTION_TRIGGER: bool({
-    desc: "外部のモーショントリガーを利用する",
-    default: false,
   }),
 });
 

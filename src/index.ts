@@ -10,7 +10,7 @@ async function main() {
   logger.info(`[Ring] Target Camera: ${camera.name}`);
   setupCameraEventListeners(camera);
 
-  const http = await initializeHttpServer(camera);
+  const http = await initializeHttpServer();
 
   const handleShutdown = async () => {
     logger.info("shutdown");

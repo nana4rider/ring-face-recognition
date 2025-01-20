@@ -139,10 +139,7 @@ export function setupCameraEventListeners(camera: RingCamera) {
       .category as PushNotificationAction;
     logger.info(`[Ring] Notification: ${category}`);
 
-    if (
-      !env.USE_EXTERNAL_MOTION_TRIGGER &&
-      category === PushNotificationAction.Motion
-    ) {
+    if (category === PushNotificationAction.Motion) {
       void startFaceRecognition(camera).catch((err) => {
         logger.error("[Ring] startFaceRecognition:", err);
       });
