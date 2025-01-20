@@ -107,7 +107,7 @@ export async function startFaceRecognition(camera: RingCamera) {
     output: [
       // FPS
       "-vf",
-      `fps=${env.VIDEO_STREAM_FPS}`,
+      `fps=${env.VIDEO_STREAM_FPS}:round=near`,
       // 音なし
       "-an",
       // 画像ファイルをpipeにストリームする
