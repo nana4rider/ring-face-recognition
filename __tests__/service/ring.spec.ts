@@ -164,6 +164,31 @@ describe("setupCameraEventListeners", () => {
     });
   });
 
+  test("外部のモーショントリガーが有効になっている場合、顔認識もWebhookもトリガーされない", () => {
+    (env as MutableEnv).USE_EXTERNAL_MOTION_TRIGGER = true;
+
+    const mockSubscribe = jest.fn<
+      void,
+      [(notification: PushNotificationDingV2) => void]
+    >();
+    const mockCamera = {
+      onNewNotification: { subscribe: mockSubscribe },
+      streamVideo: mockStreamVideo,
+    } as unknown as RingCamera;
+
+    setupCameraEventListeners(mockCamera);
+
+    // simulate Motion notification
+    const notification = {
+      android_config: { category: PushNotificationAction.Motion },
+    } as PushNotificationDingV2;
+    const subscribeCallback = mockSubscribe.mock.calls[0][0];
+    subscribeCallback(notification);
+
+    expect(mockStreamVideo).not.toHaveBeenCalled();
+    expect(triggerWebhook).not.toHaveBeenCalled();
+  });
+
   test("顔認識でエラーが発生しても例外がスローされない", () => {
     const mockSubscribe = jest.fn<
       void,

@@ -139,9 +139,12 @@ export function setupCameraEventListeners(camera: RingCamera) {
       .category as PushNotificationAction;
     logger.info(`[Ring] Notification: ${category}`);
 
-    if (category === PushNotificationAction.Motion) {
+    if (
+      !env.USE_EXTERNAL_MOTION_TRIGGER &&
+      category === PushNotificationAction.Motion
+    ) {
       void startFaceRecognition(camera).catch((err) => {
-        logger.error("processStream:", err);
+        logger.error("[Ring] startFaceRecognition:", err);
       });
       void triggerWebhook({
         type: "notification",
