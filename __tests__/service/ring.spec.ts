@@ -7,7 +7,7 @@ import {
   startFaceRecognition,
 } from "@/service/ring";
 import triggerWebhook from "@/service/webhook";
-import { composeImages } from "@/util/imageUtil";
+import { composeImages, isJpg } from "@/util/imageUtil";
 import assert from "assert";
 import fsLegacy from "fs";
 import fs from "fs/promises";
@@ -49,6 +49,7 @@ jest.mock("@/service/webhook", () => ({
 
 jest.mock("@/util/imageUtil", () => ({
   composeImages: jest.fn(),
+  isJpg: jest.fn(),
 }));
 
 const mockGetCameras = jest.fn();
@@ -250,9 +251,9 @@ describe("setupCameraEventListeners", () => {
 
 describe("startFaceRecognition", () => {
   test("顔認識できない場合、Webhookが呼ばれない", async () => {
-    (env as MutableEnv).SKIP_IMAGE_BUFFER_COUNT = 0;
     (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
 
+    (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -283,10 +284,10 @@ describe("startFaceRecognition", () => {
     expect(triggerWebhook).not.toHaveBeenCalled();
   });
 
-  test("SKIP_IMAGE_BUFFER_COUNTの条件が満たされるまで顔検出しない", async () => {
-    (env as MutableEnv).SKIP_IMAGE_BUFFER_COUNT = 1;
+  test("isJpgの条件が満たされないと顔検出しない", async () => {
     (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
 
+    (isJpg as jest.Mock).mockReturnValue(false);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -312,9 +313,9 @@ describe("startFaceRecognition", () => {
   });
 
   test("検出した顔が必要数を満たしていない場合、画像合成が行われない", async () => {
-    (env as MutableEnv).SKIP_IMAGE_BUFFER_COUNT = 0;
     (env as MutableEnv).REKOGNITION_FACE_COUNT = 2;
 
+    (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -342,9 +343,9 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔検出されなかった場合、画像合成が行われない", async () => {
-    (env as MutableEnv).SKIP_IMAGE_BUFFER_COUNT = 0;
     (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
 
+    (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -371,9 +372,9 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔認識ができたらWebhookをトリガーする", async () => {
-    (env as MutableEnv).SKIP_IMAGE_BUFFER_COUNT = 0;
     (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
 
+    (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -415,9 +416,9 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔認識でエラーが発生したらリトライする", async () => {
-    (env as MutableEnv).SKIP_IMAGE_BUFFER_COUNT = 0;
     (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
 
+    (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;

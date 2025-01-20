@@ -3,7 +3,7 @@ import logger from "@/logger";
 import detectFace from "@/service/face/detect";
 import recognizeFace, { RecognizeResult } from "@/service/face/recognize";
 import triggerWebhook from "@/service/webhook";
-import { composeImages } from "@/util/imageUtil";
+import { composeImages, isJpg } from "@/util/imageUtil";
 import assert from "assert";
 import dayjs from "dayjs";
 import { writeFileSync } from "fs";
@@ -46,6 +46,13 @@ export async function startFaceRecognition(camera: RingCamera) {
   let timeoutTimerId: NodeJS.Timeout | undefined = undefined;
 
   const handleImageBuffer = async (imageBuffer: Buffer) => {
+    if (
+      faceImageBuffers.length > env.REKOGNITION_FACE_COUNT ||
+      !isJpg(imageBuffer)
+    ) {
+      return;
+    }
+
     logger.info(`receive buffer length: ${imageBuffer.length}`);
     const faceBuffer = await detectFace(imageBuffer);
 
@@ -96,7 +103,6 @@ export async function startFaceRecognition(camera: RingCamera) {
     });
   };
 
-  let callbackCounter = 0;
   const videoStream = await camera.streamVideo({
     output: [
       // FPS
@@ -114,8 +120,7 @@ export async function startFaceRecognition(camera: RingCamera) {
       "pipe:1",
     ],
     stdoutCallback: (imageBuffer) => {
-      callbackCounter++;
-      if (timeoutTimerId && callbackCounter > env.SKIP_IMAGE_BUFFER_COUNT) {
+      if (timeoutTimerId) {
         void handleImageBuffer(imageBuffer);
       }
     },
