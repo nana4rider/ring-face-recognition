@@ -14,7 +14,7 @@ export async function composeImages(imageBuffers: Buffer[]): Promise<Buffer> {
   const createTempFile = async (buffer: Buffer): Promise<string> => {
     const tempFilePath = join(
       tmpdir(),
-      `temp-${Date.now()}-${Math.random()}.png`,
+      `temp-${Date.now()}-${Math.random()}.jpg`,
     );
     await writeFile(tempFilePath, buffer); // 非同期で書き込み
     return tempFilePath;
