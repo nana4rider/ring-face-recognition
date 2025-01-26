@@ -40,33 +40,24 @@ graph TD
     timeout --> stopStream
 ```
 
-- AWSのコストを抑えるためにFace Detectorを使ってローカルでざっくり検出させてます
+- AWSのコストを抑えるためにFace Detectorを使ってローカルでざっくり検出させています
 - 閾値未満と顔見検出はストリーミング開始直後の荒い画像が原因の可能性が高いのでリトライしています
 
 ## 使い方
 
-必要な環境変数については[こちら](https://github.com/nana4rider/ring-face-recognition/blob/main/src/env.ts)をご確認ください。
-
 ### 認証
 
 ```sh
-# 取得したリフレッシュトークンを .refreshToken に保存
+# 取得したリフレッシュトークンを .refreshToken へ保存します (""は不要)
 npm run auth
 ```
 
-### Production
+### Native
 
 ```sh
 npm install
 npm run build
-node dist/index
-```
-
-### Development
-
-```sh
-npm install
-npm run dev
+node --env-file=.env dist/index
 ```
 
 ### Docker
@@ -82,6 +73,11 @@ docker run -d \
   --restart always \
   nana4rider/ring-face-recognition:latest
 ```
+
+> [!TIP]
+> 必要な環境変数については[こちら](src/env.ts)をご確認ください。
+>
+> ストリーミングを安定させるため、 [`host` ネットワーク・モード](https://docs.docker.jp/network/host.html)の利用を推奨します。
 
 ## リンク
 
