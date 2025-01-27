@@ -11,7 +11,6 @@ const env = cleanEnv(process.env, {
     desc: "HTTPサーバーのポート",
     default: 3000,
   }),
-  //
   FACE_DETECTOR_API: url({
     desc: "https://nana4rider.github.io/openapi-ui/?face-detector#/default/post_detect",
     example: "http://face-detector.local",
