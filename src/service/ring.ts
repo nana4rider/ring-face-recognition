@@ -40,7 +40,7 @@ export async function startFaceRecognition(camera: RingCamera) {
   /* istanbul ignore next */
   if (logger.isDebugEnabled()) {
     debugDir = dayjs().format("YYYY-MM-DD-HH-mm-ss");
-    await mkdir(path.join("snapshot", debugDir));
+    await mkdir(path.join("snapshot", debugDir), { recursive: true });
   }
 
   const faceImageBuffers: Buffer[] = [];
