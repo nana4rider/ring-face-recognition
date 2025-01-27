@@ -16,6 +16,7 @@ export async function initializeRingCamera(): Promise<RingCamera> {
 
   const ringApi = new RingApi({
     refreshToken,
+    controlCenterDisplayName: "ring-face-recognition",
   });
 
   ringApi.onRefreshTokenUpdated.subscribe(({ newRefreshToken }) => {

@@ -126,7 +126,9 @@ describe("initializeRingCamera", () => {
       },
     );
 
-    const mockWriteFileSync = jest.spyOn(fsLegacy, "writeFileSync");
+    const mockWriteFileSync = jest
+      .spyOn(fsLegacy, "writeFileSync")
+      .mockImplementation();
 
     await initializeRingCamera();
 
