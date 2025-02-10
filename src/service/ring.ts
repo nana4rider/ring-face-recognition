@@ -4,7 +4,6 @@ import detectFace from "@/service/face/detect";
 import recognizeFace, { RecognizeResult } from "@/service/face/recognize";
 import triggerWebhook from "@/service/webhook";
 import { composeImages, isJpg } from "@/util/imageUtil";
-import assert from "assert";
 import dayjs from "dayjs";
 import { writeFileSync } from "fs";
 import { mkdir, readFile, writeFile } from "fs/promises";
@@ -45,10 +44,11 @@ export async function startFaceRecognition(camera: RingCamera) {
 
   const faceImageBuffers: Buffer[] = [];
   let timeoutTimerId: NodeJS.Timeout | undefined = undefined;
+  let retryCount = 0;
 
   const handleImageBuffer = async (imageBuffer: Buffer) => {
     if (
-      faceImageBuffers.length > env.REKOGNITION_FACE_COUNT ||
+      faceImageBuffers.length > env.RECOGNITION_FACE_COUNT ||
       !isJpg(imageBuffer)
     ) {
       return;
@@ -67,7 +67,7 @@ export async function startFaceRecognition(camera: RingCamera) {
       `[Face Detector] faceBuffers length: ${faceImageBuffers.length}`,
     );
 
-    if (faceImageBuffers.length !== env.REKOGNITION_FACE_COUNT) {
+    if (faceImageBuffers.length !== env.RECOGNITION_FACE_COUNT) {
       return;
     }
 
@@ -77,25 +77,27 @@ export async function startFaceRecognition(camera: RingCamera) {
 
     void writeDebugFile(compositeFaceImageBuffer, debugDir, "comp");
 
-    let result: RecognizeResult | undefined;
+    let result: RecognizeResult | undefined = undefined;
     try {
       result = await recognizeFace(compositeFaceImageBuffer);
     } catch (err) {
-      // Face Detectorは顔と認識したが外部APIでは検出されない = 画像が荒い可能性が高い
+      logger.warn("[Recognition] Failed:", err);
+    }
+    if (!result) {
+      retryCount++;
+      if (retryCount >= env.RECOGNITION_MAX_RETRIES) {
+        logger.info(`retryCount >= ${env.RECOGNITION_MAX_RETRIES}`);
+        stopStream();
+        return;
+      }
       // より後の画像の方が信用が高いので、1から収集する
       faceImageBuffers.length = 0;
-      logger.warn("[Recognition] Failed:", err);
       return;
     }
 
     // 顔認識が成功したらストリームを停止する
     logger.info("stop stream");
-    assert(timeoutTimerId);
-    clearTimeout(timeoutTimerId);
-    timeoutTimerId = undefined;
-    videoStream.stop();
-
-    if (!result) return;
+    stopStream();
 
     logger.info(`[Recognition] recognize: ${JSON.stringify(result)}`);
     await triggerWebhook({
@@ -130,6 +132,12 @@ export async function startFaceRecognition(camera: RingCamera) {
   timeoutTimerId = setTimeout(() => {
     videoStream.stop();
   }, env.DETECT_TIMEOUT);
+
+  const stopStream = () => {
+    clearTimeout(timeoutTimerId);
+    timeoutTimerId = undefined;
+    videoStream.stop();
+  };
 
   logger.info("[Ring] start stream");
 }

@@ -51,9 +51,13 @@ const env = cleanEnv(process.env, {
     desc: "ビデオストリームを開始してから自動終了するまでの時間",
     default: 15000,
   }),
-  REKOGNITION_FACE_COUNT: num({
-    desc: "Rekognition APIに渡す顔の数",
+  RECOGNITION_FACE_COUNT: num({
+    desc: "顔認識APIに渡す顔の数",
     default: 3,
+  }),
+  RECOGNITION_MAX_RETRIES: num({
+    desc: "リトライ回数",
+    default: 2,
   }),
   VIDEO_STREAM_FPS: num({
     desc: "ビデオストリームのFPS",

@@ -16,24 +16,22 @@ graph TD
     startStream --> detectFace[画像を解析し顔を検出]
 
     %% 必要な顔画像数に達するまでのループ
-    detectFace --> decision1{顔画像数が必要数以上か?}
-    decision1 -->|No| waitAndRetry[再試行: 画像を取得]
+    detectFace --> faceCount{顔画像数が必要数以上か?}
+    faceCount -->|No| waitAndRetry[再試行: 画像を取得]
     waitAndRetry --> detectFace
-    decision1 -->|Yes| composeImages[画像を合成]
+    faceCount -->|Yes| composeImages[画像を合成]
 
-    %% Rekognitionと閾値チェック
-    composeImages --> sendToRekognition[Amazon Rekognitionで顔認識]
-    decision2 -->|Yes| checkThreshold{閾値以上か?}
-    checkThreshold -->|Yes| notifyWebhook[Webhookで一致したIDを通知]
+    %% Recognition
+    composeImages --> sendToRecognition[Amazon Recognitionで顔認識]
+    matched -->|Yes| notifyWebhook[Webhookで一致したIDを通知]
     notifyWebhook --> stopStream[ストリーミング終了]
-    checkThreshold -->|No| clearFace[顔画像を全てクリア]
-    clearFace --> detectFace
-    decision2 -->|No| stopStream
 
-    %% Rekognition失敗時の処理
-    sendToRekognition --> decision3{顔を検出できたか?}
-    decision3 -->|No| clearFace
-    decision3 -->|Yes| decision2{顔一致あり?}
+    %% Recognition失敗時の処理
+    sendToRecognition --> matched{顔一致あり?}
+    matched -->|No| retry{リトライ可能?}
+    retry -->|Yes| clearFace[顔画像を全てクリア]
+    clearFace --> detectFace
+    retry -->|No| stopStream
 
     %% タイムアウト処理
     startStream --> timeout[タイムアウト]

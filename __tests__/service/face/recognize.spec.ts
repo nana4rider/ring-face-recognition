@@ -130,7 +130,7 @@ describe("recognizeFace", () => {
     expect(result).toBeUndefined();
   });
 
-  test("FACE_MATCH_THRESHOLDが設定されている場合、閾値を下回った検出があると例外をスローする", async () => {
+  test("FACE_MATCH_THRESHOLDが設定されている場合、閾値を下回った検出があるとundefinedを返す", async () => {
     (env as MutableEnv).FACE_MATCH_THRESHOLD = 90;
 
     const mockSend: jest.SpyInstance = jest.spyOn(
@@ -145,8 +145,8 @@ describe("recognizeFace", () => {
       SearchedFaceConfidence: 80,
     });
 
-    const actual = recognizeFace(mockImageBuffer);
+    const result = await recognizeFace(mockImageBuffer);
 
-    await expect(actual).rejects.toThrow();
+    expect(result).toBeUndefined();
   });
 });

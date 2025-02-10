@@ -253,7 +253,7 @@ describe("setupCameraEventListeners", () => {
 
 describe("startFaceRecognition", () => {
   test("顔認識できない場合、Webhookが呼ばれない", async () => {
-    (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
+    (env as MutableEnv).RECOGNITION_FACE_COUNT = 1;
 
     (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
@@ -287,7 +287,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("isJpgの条件が満たされないと顔検出しない", async () => {
-    (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
+    (env as MutableEnv).RECOGNITION_FACE_COUNT = 1;
 
     (isJpg as jest.Mock).mockReturnValue(false);
     const mockCamera = {
@@ -315,7 +315,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("検出した顔が必要数を満たしていない場合、画像合成が行われない", async () => {
-    (env as MutableEnv).REKOGNITION_FACE_COUNT = 2;
+    (env as MutableEnv).RECOGNITION_FACE_COUNT = 2;
 
     (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
@@ -345,7 +345,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔検出されなかった場合、画像合成が行われない", async () => {
-    (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
+    (env as MutableEnv).RECOGNITION_FACE_COUNT = 1;
 
     (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
@@ -374,7 +374,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔認識ができたらWebhookをトリガーする", async () => {
-    (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
+    (env as MutableEnv).RECOGNITION_FACE_COUNT = 1;
 
     (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
@@ -418,7 +418,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔認識でエラーが発生したらリトライする", async () => {
-    (env as MutableEnv).REKOGNITION_FACE_COUNT = 1;
+    (env as MutableEnv).RECOGNITION_FACE_COUNT = 1;
 
     (isJpg as jest.Mock).mockReturnValue(true);
     const mockCamera = {
@@ -469,6 +469,51 @@ describe("startFaceRecognition", () => {
       type: "recognition",
       result: mockRecognizeFace,
     });
+  });
+
+  test("最大リトライ回数以上になるとストリームを停止する", async () => {
+    (env as MutableEnv).RECOGNITION_FACE_COUNT = 1;
+
+    (isJpg as jest.Mock).mockReturnValue(true);
+    const mockCamera = {
+      streamVideo: mockStreamVideo,
+    } as unknown as RingCamera;
+    const mockImageBuffer = Buffer.from("mockImageBuffer");
+    const mockFaceBuffer = Buffer.from("mockFaceBuffer");
+    const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
+
+    const mockReadFile = jest.spyOn(fs, "readFile");
+    mockReadFile.mockResolvedValue("mockRefreshToken");
+
+    let executeStdoutCallback: () => void;
+    const stopMock = jest.fn();
+    mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
+      executeStdoutCallback = () => {
+        setImmediate(() => {
+          assert(options.stdoutCallback);
+          options.stdoutCallback(mockImageBuffer);
+        });
+      };
+      executeStdoutCallback();
+      return Promise.resolve({
+        stop: stopMock,
+      }) as unknown as Promise<StreamingSession>;
+    });
+    (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
+    (composeImages as jest.Mock).mockResolvedValue(mockCompositeBuffer);
+    (recognizeFace as jest.Mock).mockImplementation(() => {
+      executeStdoutCallback();
+      return Promise.reject(new Error("recognition error"));
+    });
+
+    await startFaceRecognition(mockCamera);
+    await setTimeout(200);
+
+    expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
+    expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
+    expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
+    expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
+    expect(stopMock).toHaveBeenCalled();
   });
 
   test("タイムアウト時にストリームを停止する", async () => {

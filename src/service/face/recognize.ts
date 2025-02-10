@@ -50,8 +50,8 @@ export default async function recognizeFace(
     env.FACE_MATCH_THRESHOLD &&
     env.FACE_MATCH_THRESHOLD > face.Similarity
   ) {
-    // 検出されているが閾値を下回っている場合は、リトライすると通る可能性があるので例外をスローする
-    throw new Error("The similarity score is below the threshold.");
+    logger.info("[Rekognition] 検出されているが閾値を下回っている");
+    return undefined;
   }
 
   const faceId = face.Face.FaceId!;
