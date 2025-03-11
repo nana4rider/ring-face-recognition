@@ -9,8 +9,8 @@ import {
 import triggerWebhook from "@/service/webhook";
 import { composeImages, isJpg } from "@/util/imageUtil";
 import assert from "assert";
-import fsLegacy from "fs";
-import fs from "fs/promises";
+import { writeFileSync } from "fs";
+import { readFile } from "fs/promises";
 import {
   PushNotificationAction,
   PushNotificationDingV2,
@@ -23,45 +23,42 @@ import type {
 } from "ring-client-api/lib/streaming/streaming-session";
 import { setTimeout } from "timers/promises";
 import { Writable } from "type-fest";
+import { Mock } from "vitest";
 
-jest.mock("fs/promises", () => {
-  return {
-    readFile: jest.fn(),
-    writeFile: jest.fn(),
-    mkdir: jest.fn(),
-  };
-});
+vi.mock("node:fs");
 
-jest.mock("@/service/face/detect", () => ({
+vi.mock("node:fs/promises");
+
+vi.mock("@/service/face/detect", () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
-jest.mock("@/service/face/recognize", () => ({
+vi.mock("@/service/face/recognize", () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
-jest.mock("@/service/webhook", () => ({
+vi.mock("@/service/webhook", () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
-jest.mock("@/util/imageUtil", () => ({
-  composeImages: jest.fn(),
-  isJpg: jest.fn(),
+vi.mock("@/util/imageUtil", () => ({
+  composeImages: vi.fn(),
+  isJpg: vi.fn(),
 }));
 
-const mockGetCameras = jest.fn();
-const mockRefreshTokenSubscribe = jest.fn();
-const mockStreamVideo = jest.fn().mockReturnValue({ stop: jest.fn() });
+const mockGetCameras = vi.fn();
+const mockRefreshTokenSubscribe = vi.fn();
+const mockStreamVideo = vi.fn().mockReturnValue({ stop: vi.fn() });
 
-jest.mock("ring-client-api", () => {
-  const actual = jest.requireActual<typeof ring>("ring-client-api");
+vi.mock("ring-client-api", async () => {
+  const actual = await vi.importActual<typeof ring>("ring-client-api");
 
   return {
     ...actual,
-    RingApi: jest.fn().mockImplementation(() => ({
+    RingApi: vi.fn().mockImplementation(() => ({
       onRefreshTokenUpdated: {
         subscribe: mockRefreshTokenSubscribe,
       },
@@ -73,7 +70,7 @@ jest.mock("ring-client-api", () => {
 beforeEach(() => {
   (env as Writable<typeof env>).RING_CAMERA_ID = undefined;
   (env as Writable<typeof env>).RECOGNITION_FACE_COUNT = 1;
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("initializeRingCamera", () => {
@@ -84,14 +81,13 @@ describe("initializeRingCamera", () => {
     const mockCamera = { id: 12345 } as RingCamera;
     const mockFailedCamera = { id: 12346 } as RingCamera;
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue(mockRefreshToken);
+    (readFile as Mock).mockResolvedValue(mockRefreshToken);
 
     mockGetCameras.mockResolvedValue([mockFailedCamera, mockCamera]);
 
     const result = await initializeRingCamera();
 
-    expect(mockReadFile).toHaveBeenCalledWith(
+    expect(readFile).toHaveBeenCalledWith(
       expect.stringMatching(/refreshToken/),
       "utf-8",
     );
@@ -102,8 +98,7 @@ describe("initializeRingCamera", () => {
   test("カメラが見つからない場合、エラーをスローする", async () => {
     const mockRefreshToken = "mockRefreshToken";
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue(mockRefreshToken);
+    (readFile as Mock).mockResolvedValue(mockRefreshToken);
 
     mockGetCameras.mockResolvedValue([]);
 
@@ -115,8 +110,7 @@ describe("initializeRingCamera", () => {
     const mockRefreshToken = "mockRefreshToken";
     const mockNewRefreshToken = "mockNewRefreshToken";
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue(mockRefreshToken);
+    (readFile as Mock).mockResolvedValue(mockRefreshToken);
 
     mockGetCameras.mockResolvedValue([mockCamera]);
 
@@ -128,13 +122,9 @@ describe("initializeRingCamera", () => {
       },
     );
 
-    const mockWriteFileSync = jest
-      .spyOn(fsLegacy, "writeFileSync")
-      .mockImplementation();
-
     await initializeRingCamera();
 
-    expect(mockWriteFileSync).toHaveBeenCalledWith(
+    expect(writeFileSync).toHaveBeenCalledWith(
       expect.stringMatching(/refreshToken/),
       mockNewRefreshToken,
     );
@@ -142,11 +132,11 @@ describe("initializeRingCamera", () => {
 });
 
 describe("setupCameraEventListeners", () => {
-  test("Motionイベントで顔認識とWebhookがトリガーされる", () => {
-    const mockSubscribe = jest.fn<
-      void,
-      [(notification: PushNotificationDingV2) => void]
-    >();
+  test("Motionイベントで顔認識とWebhookがトリガーされる", async () => {
+    const mockSubscribe =
+      vi.fn<
+        (callback: (notification: PushNotificationDingV2) => void) => void
+      >();
     const mockCamera = {
       onNewNotification: { subscribe: mockSubscribe },
       streamVideo: mockStreamVideo,
@@ -161,18 +151,20 @@ describe("setupCameraEventListeners", () => {
     const subscribeCallback = mockSubscribe.mock.calls[0][0];
     subscribeCallback(notification);
 
-    expect(mockStreamVideo).toHaveBeenCalledTimes(1);
-    expect(triggerWebhook).toHaveBeenCalledWith({
-      type: "notification",
-      event: "motion",
+    await vi.waitFor(() => {
+      expect(mockStreamVideo).toHaveBeenCalledTimes(1);
+      expect(triggerWebhook).toHaveBeenCalledWith({
+        type: "notification",
+        event: "motion",
+      });
     });
   });
 
   test("顔認識でエラーが発生しても例外がスローされない", () => {
-    const mockSubscribe = jest.fn<
-      void,
-      [(notification: PushNotificationDingV2) => void]
-    >();
+    const mockSubscribe =
+      vi.fn<
+        (callback: (notification: PushNotificationDingV2) => void) => void
+      >();
     const mockCamera = {
       onNewNotification: { subscribe: mockSubscribe },
       streamVideo: mockStreamVideo,
@@ -193,10 +185,10 @@ describe("setupCameraEventListeners", () => {
   });
 
   test("DingイベントでWebhookがトリガーされる", () => {
-    const mockSubscribe = jest.fn<
-      void,
-      [(notification: PushNotificationDingV2) => void]
-    >();
+    const mockSubscribe =
+      vi.fn<
+        (callback: (notification: PushNotificationDingV2) => void) => void
+      >();
     const mockCamera = {
       onNewNotification: { subscribe: mockSubscribe },
       streamVideo: mockStreamVideo,
@@ -218,10 +210,10 @@ describe("setupCameraEventListeners", () => {
   });
 
   test("未知のイベントカテゴリーでは何もしない", () => {
-    const mockSubscribe = jest.fn<
-      void,
-      [(notification: PushNotificationDingV2) => void]
-    >();
+    const mockSubscribe =
+      vi.fn<
+        (callback: (notification: PushNotificationDingV2) => void) => void
+      >();
     const mockCamera = {
       onNewNotification: { subscribe: mockSubscribe },
       streamVideo: mockStreamVideo,
@@ -241,7 +233,7 @@ describe("setupCameraEventListeners", () => {
   });
 
   test("subscribeが正しく呼び出される", () => {
-    const mockSubscribe = jest.fn();
+    const mockSubscribe = vi.fn();
     const mockCamera = {
       onNewNotification: { subscribe: mockSubscribe },
     } as unknown as RingCamera;
@@ -255,7 +247,7 @@ describe("setupCameraEventListeners", () => {
 
 describe("startFaceRecognition", () => {
   test("顔認識できない場合、Webhookが呼ばれない", async () => {
-    (isJpg as jest.Mock).mockReturnValue(true);
+    (isJpg as Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -263,8 +255,7 @@ describe("startFaceRecognition", () => {
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue("mockRefreshToken");
+    (readFile as Mock).mockResolvedValue("mockRefreshToken");
 
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
       setImmediate(() => {
@@ -272,13 +263,13 @@ describe("startFaceRecognition", () => {
         options.stdoutCallback(mockImageBuffer);
       });
       return Promise.resolve({
-        stop: jest.fn(),
+        stop: vi.fn(),
       }) as unknown as Promise<StreamingSession>;
     });
 
-    (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
-    (composeImages as jest.Mock).mockResolvedValue(mockCompositeBuffer);
-    (recognizeFace as jest.Mock).mockResolvedValue(undefined);
+    (detectFace as Mock).mockResolvedValue(mockFaceBuffer);
+    (composeImages as Mock).mockResolvedValue(mockCompositeBuffer);
+    (recognizeFace as Mock).mockResolvedValue(undefined);
 
     await startFaceRecognition(mockCamera);
     await setTimeout(10);
@@ -287,14 +278,13 @@ describe("startFaceRecognition", () => {
   });
 
   test("isJpgの条件が満たされないと顔検出しない", async () => {
-    (isJpg as jest.Mock).mockReturnValue(false);
+    (isJpg as Mock).mockReturnValue(false);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
     const mockImageBuffer = Buffer.from("mockImageBuffer");
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue("mockRefreshToken");
+    (readFile as Mock).mockResolvedValue("mockRefreshToken");
 
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
       setImmediate(() => {
@@ -302,7 +292,7 @@ describe("startFaceRecognition", () => {
         options.stdoutCallback(mockImageBuffer);
       });
       return Promise.resolve({
-        stop: jest.fn(),
+        stop: vi.fn(),
       }) as unknown as Promise<StreamingSession>;
     });
 
@@ -315,15 +305,14 @@ describe("startFaceRecognition", () => {
   test("検出した顔が必要数を満たしていない場合、画像合成が行われない", async () => {
     (env as Writable<typeof env>).RECOGNITION_FACE_COUNT = 2;
 
-    (isJpg as jest.Mock).mockReturnValue(true);
+    (isJpg as Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
     const mockImageBuffer = Buffer.from("mockImageBuffer");
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue("mockRefreshToken");
+    (readFile as Mock).mockResolvedValue("mockRefreshToken");
 
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
       setImmediate(() => {
@@ -331,10 +320,10 @@ describe("startFaceRecognition", () => {
         options.stdoutCallback(mockImageBuffer);
       });
       return Promise.resolve({
-        stop: jest.fn(),
+        stop: vi.fn(),
       }) as unknown as Promise<StreamingSession>;
     });
-    (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
+    (detectFace as Mock).mockResolvedValue(mockFaceBuffer);
 
     await startFaceRecognition(mockCamera);
     await setTimeout(10);
@@ -343,14 +332,13 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔検出されなかった場合、画像合成が行われない", async () => {
-    (isJpg as jest.Mock).mockReturnValue(true);
+    (isJpg as Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
     const mockImageBuffer = Buffer.from("mockImageBuffer");
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue("mockRefreshToken");
+    (readFile as Mock).mockResolvedValue("mockRefreshToken");
 
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
       setImmediate(() => {
@@ -358,10 +346,10 @@ describe("startFaceRecognition", () => {
         options.stdoutCallback(mockImageBuffer);
       });
       return Promise.resolve({
-        stop: jest.fn(),
+        stop: vi.fn(),
       }) as unknown as Promise<StreamingSession>;
     });
-    (detectFace as jest.Mock).mockResolvedValue(undefined);
+    (detectFace as Mock).mockResolvedValue(undefined);
 
     await startFaceRecognition(mockCamera);
     await setTimeout(10);
@@ -370,7 +358,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔認識ができたらWebhookをトリガーする", async () => {
-    (isJpg as jest.Mock).mockReturnValue(true);
+    (isJpg as Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -383,8 +371,7 @@ describe("startFaceRecognition", () => {
       externalImageId: "testExternalImageId",
     };
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue("mockRefreshToken");
+    (readFile as Mock).mockResolvedValue("mockRefreshToken");
 
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
       setImmediate(() => {
@@ -392,12 +379,12 @@ describe("startFaceRecognition", () => {
         options.stdoutCallback(mockImageBuffer);
       });
       return Promise.resolve({
-        stop: jest.fn(),
+        stop: vi.fn(),
       }) as unknown as Promise<StreamingSession>;
     });
-    (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
-    (composeImages as jest.Mock).mockResolvedValue(mockCompositeBuffer);
-    (recognizeFace as jest.Mock).mockResolvedValue(mockRecognizeFace);
+    (detectFace as Mock).mockResolvedValue(mockFaceBuffer);
+    (composeImages as Mock).mockResolvedValue(mockCompositeBuffer);
+    (recognizeFace as Mock).mockResolvedValue(mockRecognizeFace);
 
     await startFaceRecognition(mockCamera);
     await setTimeout(10);
@@ -412,7 +399,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("顔認識でエラーが発生したらリトライする", async () => {
-    (isJpg as jest.Mock).mockReturnValue(true);
+    (isJpg as Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -425,8 +412,7 @@ describe("startFaceRecognition", () => {
       externalImageId: "testExternalImageId",
     };
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue("mockRefreshToken");
+    (readFile as Mock).mockResolvedValue("mockRefreshToken");
 
     let executeStdoutCallback: () => void;
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
@@ -438,12 +424,12 @@ describe("startFaceRecognition", () => {
       };
       executeStdoutCallback();
       return Promise.resolve({
-        stop: jest.fn(),
+        stop: vi.fn(),
       }) as unknown as Promise<StreamingSession>;
     });
-    (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
-    (composeImages as jest.Mock).mockResolvedValue(mockCompositeBuffer);
-    (recognizeFace as jest.Mock)
+    (detectFace as Mock).mockResolvedValue(mockFaceBuffer);
+    (composeImages as Mock).mockResolvedValue(mockCompositeBuffer);
+    (recognizeFace as Mock)
       .mockImplementationOnce(() => {
         executeStdoutCallback();
         return Promise.reject(new Error("recognition error"));
@@ -464,7 +450,7 @@ describe("startFaceRecognition", () => {
   });
 
   test("最大リトライ回数以上になるとストリームを停止する", async () => {
-    (isJpg as jest.Mock).mockReturnValue(true);
+    (isJpg as Mock).mockReturnValue(true);
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
@@ -472,11 +458,10 @@ describe("startFaceRecognition", () => {
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
 
-    const mockReadFile = jest.spyOn(fs, "readFile");
-    mockReadFile.mockResolvedValue("mockRefreshToken");
+    (readFile as Mock).mockResolvedValue("mockRefreshToken");
 
     let executeStdoutCallback: () => void;
-    const stopMock = jest.fn();
+    const stopMock = vi.fn();
     mockStreamVideo.mockImplementation(async (options: FfmpegOptions) => {
       executeStdoutCallback = () => {
         setImmediate(() => {
@@ -489,9 +474,9 @@ describe("startFaceRecognition", () => {
         stop: stopMock,
       }) as unknown as Promise<StreamingSession>;
     });
-    (detectFace as jest.Mock).mockResolvedValue(mockFaceBuffer);
-    (composeImages as jest.Mock).mockResolvedValue(mockCompositeBuffer);
-    (recognizeFace as jest.Mock).mockImplementation(() => {
+    (detectFace as Mock).mockResolvedValue(mockFaceBuffer);
+    (composeImages as Mock).mockResolvedValue(mockCompositeBuffer);
+    (recognizeFace as Mock).mockImplementation(() => {
       executeStdoutCallback();
       return Promise.reject(new Error("recognition error"));
     });
@@ -507,13 +492,13 @@ describe("startFaceRecognition", () => {
   });
 
   test("タイムアウト時にストリームを停止する", async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const mockCamera = {
       streamVideo: mockStreamVideo,
     } as unknown as RingCamera;
 
-    const stopMock = jest.fn();
+    const stopMock = vi.fn();
     mockStreamVideo.mockReturnValue(
       Promise.resolve({
         stop: stopMock,
@@ -523,10 +508,10 @@ describe("startFaceRecognition", () => {
     await startFaceRecognition(mockCamera);
     await setTimeout(10);
 
-    jest.runAllTimers();
+    vi.runAllTimers();
 
     expect(stopMock).toHaveBeenCalled();
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

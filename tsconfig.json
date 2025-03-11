@@ -13,6 +13,7 @@
     "paths": {
       "@/*": ["src/*"],
       "werift-rtp/*": ["node_modules/werift-rtp/lib/common/src"]
-    }
+    },
+    "types": ["vitest/globals"]
   }
 }

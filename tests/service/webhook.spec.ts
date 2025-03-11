@@ -1,8 +1,8 @@
 import env from "@/env";
 import triggerWebhook from "@/service/webhook";
 
-const mockFetchResponse = jest.fn();
-global.fetch = jest
+const mockFetchResponse = vi.fn();
+global.fetch = vi
   .fn()
   .mockImplementation((_input: RequestInfo | URL, _init?: RequestInit) => {
     return Promise.resolve(mockFetchResponse());

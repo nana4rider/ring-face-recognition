@@ -1,5 +1,5 @@
 import pluginJs from "@eslint/js";
-import jest from "eslint-plugin-jest";
+import vitest from "@vitest/eslint-plugin";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -37,11 +37,12 @@ export default [
   },
   {
     files: ["__tests__/**/*.ts"],
-    ...jest.configs["flat/recommended"],
+    plugins: {
+      vitest,
+    },
     rules: {
-      ...jest.configs["flat/recommended"].rules,
+      ...vitest.configs.recommended.rules,
       "@typescript-eslint/unbound-method": "off",
-      "jest/unbound-method": "error",
     },
   },
 ];

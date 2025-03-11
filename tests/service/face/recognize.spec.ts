@@ -1,12 +1,21 @@
 import recognizeFace from "@/service/face/recognize";
 import {
+  FaceMatch,
   RekognitionClient,
   SearchFacesByImageCommand,
+  SearchFacesByImageCommandOutput,
 } from "@aws-sdk/client-rekognition";
+import { MockInstance } from "vitest";
+
+type RekognitionSend = MockInstance<
+  (
+    command: SearchFacesByImageCommand,
+  ) => Promise<SearchFacesByImageCommandOutput>
+>;
 
 describe("recognizeFace", () => {
   test("一致する顔が見つかった場合、顔の詳細を返す", async () => {
-    const mockSend: jest.SpyInstance = jest.spyOn(
+    const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
     );
@@ -25,7 +34,7 @@ describe("recognizeFace", () => {
         },
       ],
       SearchedFaceConfidence: 99,
-    });
+    } as SearchFacesByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
@@ -47,7 +56,7 @@ describe("recognizeFace", () => {
   });
 
   test("externalImageIdが未設定の場合、nullを返す", async () => {
-    const mockSend: jest.SpyInstance = jest.spyOn(
+    const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
     );
@@ -65,7 +74,7 @@ describe("recognizeFace", () => {
         },
       ],
       SearchedFaceConfidence: 99,
-    });
+    } as SearchFacesByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
@@ -87,16 +96,16 @@ describe("recognizeFace", () => {
   });
 
   test("FaceMatchesが空の場合、undefinedを返す", async () => {
-    const mockSend: jest.SpyInstance = jest.spyOn(
+    const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
     );
     const mockImageBuffer = Buffer.from("mockBuffer");
 
-    mockSend.mockReturnValueOnce({
-      FaceMatches: [],
+    mockSend.mockResolvedValueOnce({
+      FaceMatches: [] as FaceMatch,
       SearchedFaceConfidence: 0,
-    });
+    } as SearchFacesByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
@@ -107,18 +116,16 @@ describe("recognizeFace", () => {
   });
 
   test("一致する顔が見つからなかった場合、undefinedを返す", async () => {
-    const mockSend: jest.SpyInstance = jest.spyOn(
+    const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
     );
     const mockImageBuffer = Buffer.from("mockBuffer");
 
-    mockSend.mockReturnValueOnce(
-      Promise.resolve({
-        FaceMatches: undefined,
-        SearchedFaceConfidence: 99,
-      }),
-    );
+    mockSend.mockResolvedValueOnce({
+      FaceMatches: undefined,
+      SearchedFaceConfidence: 99,
+    } as SearchFacesByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
@@ -129,7 +136,7 @@ describe("recognizeFace", () => {
   });
 
   test("FACE_MATCH_THRESHOLDが設定されている場合、閾値を下回った検出があるとundefinedを返す", async () => {
-    const mockSend: jest.SpyInstance = jest.spyOn(
+    const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
     );
@@ -139,7 +146,7 @@ describe("recognizeFace", () => {
     mockSend.mockResolvedValue({
       FaceMatches: [{ Similarity: 80, Face: {} }],
       SearchedFaceConfidence: 80,
-    });
+    } as SearchFacesByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 

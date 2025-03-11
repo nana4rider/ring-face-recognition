@@ -3,8 +3,8 @@ import detectFace from "@/service/face/detect";
 import { bufferToBlob } from "@/util/dataTransformUtil";
 import { Writable } from "type-fest";
 
-const mockFetchResponse = jest.fn();
-global.fetch = jest
+const mockFetchResponse = vi.fn();
+global.fetch = vi
   .fn()
   .mockImplementation((_input: RequestInfo | URL, _init?: RequestInit) => {
     return Promise.resolve(mockFetchResponse());
