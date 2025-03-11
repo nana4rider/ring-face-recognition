@@ -36,7 +36,7 @@ export default [
     },
   },
   {
-    files: ["__tests__/**/*.ts"],
+    files: ["tests/**/*.ts"],
     plugins: {
       vitest,
     },
