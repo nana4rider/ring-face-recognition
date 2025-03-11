@@ -1,7 +1,7 @@
 import env from "@/env";
 import detectFace from "@/service/face/detect";
 import { bufferToBlob } from "@/util/dataTransformUtil";
-import { MutableEnv } from "jest.setup";
+import { Writable } from "type-fest";
 
 const mockFetchResponse = jest.fn();
 global.fetch = jest
@@ -19,7 +19,7 @@ describe("detectFace", () => {
     const result = await detectFace(Buffer.from("requestData"));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      `${process.env.FACE_DETECTOR_API}/detect`,
+      `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
         body: expect.any(FormData) as FormData,
@@ -37,7 +37,7 @@ describe("detectFace", () => {
     const result = await detectFace(Buffer.from("requestData"));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      `${process.env.FACE_DETECTOR_API}/detect`,
+      `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
         body: expect.any(FormData) as FormData,
@@ -47,11 +47,11 @@ describe("detectFace", () => {
   });
 
   test("オプションがリクエストに反映される", async () => {
-    (env as MutableEnv).DETECT_MIN_SIZE = 100;
-    (env as MutableEnv).DETECT_START_X = 200;
-    (env as MutableEnv).DETECT_START_Y = 300;
-    (env as MutableEnv).DETECT_END_X = 400;
-    (env as MutableEnv).DETECT_END_Y = 500;
+    (env as Writable<typeof env>).DETECT_MIN_SIZE = 100;
+    (env as Writable<typeof env>).DETECT_START_X = 200;
+    (env as Writable<typeof env>).DETECT_START_Y = 300;
+    (env as Writable<typeof env>).DETECT_END_X = 400;
+    (env as Writable<typeof env>).DETECT_END_Y = 500;
 
     const requestData = Buffer.from("requestData");
 
@@ -71,7 +71,7 @@ describe("detectFace", () => {
     expectedFormData.append("file", bufferToBlob(requestData), "image.jpg");
 
     expect(global.fetch).toHaveBeenCalledWith(
-      `${process.env.FACE_DETECTOR_API}/detect`,
+      `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
         body: expectedFormData,

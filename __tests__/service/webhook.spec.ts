@@ -1,3 +1,4 @@
+import env from "@/env";
 import triggerWebhook from "@/service/webhook";
 
 const mockFetchResponse = jest.fn();
@@ -21,7 +22,7 @@ describe("triggerWebhook", () => {
 
     await expect(actual).resolves.toBeUndefined();
 
-    expect(global.fetch).toHaveBeenCalledWith(process.env.WEBHOOK, {
+    expect(global.fetch).toHaveBeenCalledWith(env.WEBHOOK, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

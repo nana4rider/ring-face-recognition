@@ -1,10 +1,8 @@
-import env from "@/env";
 import recognizeFace from "@/service/face/recognize";
 import {
   RekognitionClient,
   SearchFacesByImageCommand,
 } from "@aws-sdk/client-rekognition";
-import { MutableEnv } from "jest.setup";
 
 describe("recognizeFace", () => {
   test("一致する顔が見つかった場合、顔の詳細を返す", async () => {
@@ -131,8 +129,6 @@ describe("recognizeFace", () => {
   });
 
   test("FACE_MATCH_THRESHOLDが設定されている場合、閾値を下回った検出があるとundefinedを返す", async () => {
-    (env as MutableEnv).FACE_MATCH_THRESHOLD = 90;
-
     const mockSend: jest.SpyInstance = jest.spyOn(
       RekognitionClient.prototype,
       "send",
