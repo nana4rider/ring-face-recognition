@@ -30,17 +30,14 @@ vi.mock("node:fs");
 vi.mock("node:fs/promises");
 
 vi.mock("@/service/face/detect", () => ({
-  __esModule: true,
   default: vi.fn(),
 }));
 
 vi.mock("@/service/face/recognize", () => ({
-  __esModule: true,
   default: vi.fn(),
 }));
 
 vi.mock("@/service/webhook", () => ({
-  __esModule: true,
   default: vi.fn(),
 }));
 
