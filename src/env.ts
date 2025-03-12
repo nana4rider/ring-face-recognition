@@ -10,7 +10,11 @@ const env = cleanEnv(process.env, {
     default: undefined,
     devDefault: testOnly(90),
   }),
-  LOG_LEVEL: str({ desc: "ログレベル", default: "info" }),
+  LOG_LEVEL: str({
+    desc: "ログレベル",
+    default: "info",
+    devDefault: testOnly("debug"),
+  }),
   PORT: port({
     desc: "HTTPサーバーのポート",
     default: 3000,

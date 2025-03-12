@@ -2,26 +2,24 @@ import { composeImages, isJpg } from "@/util/imageUtil";
 import { unlink, writeFile } from "fs/promises";
 import gm from "gm";
 import { tmpdir } from "os";
+import { Mock } from "vitest";
 
-jest.mock("fs/promises", () => ({
-  writeFile: jest.fn(),
-  unlink: jest.fn(),
-}));
+vi.mock("node:fs/promises");
 
-jest.mock("gm", () =>
-  jest.fn(() => ({
-    in: jest.fn().mockReturnThis(),
-    append: jest.fn().mockReturnThis(),
-    toBuffer: jest.fn(
+vi.mock("gm", () => ({
+  default: vi.fn(() => ({
+    in: vi.fn().mockReturnThis(),
+    append: vi.fn().mockReturnThis(),
+    toBuffer: vi.fn(
       (_, callback: (err: Error | null, buffer: Buffer) => void) =>
         callback(null, Buffer.from("test-buffer")),
     ),
   })),
-);
+}));
 
 describe("composeImages", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test("空の画像リストを渡すと空のバッファを返す", async () => {
@@ -38,11 +36,11 @@ describe("composeImages", () => {
   test("複数の画像バッファを結合して返す", async () => {
     const buffers = [Buffer.from("image1"), Buffer.from("image2")];
 
-    (writeFile as jest.Mock).mockImplementation(async () => {
+    (writeFile as Mock).mockImplementation(async () => {
       // シミュレーション用の書き込みモック
     });
 
-    (unlink as jest.Mock).mockImplementation(async () => {
+    (unlink as Mock).mockImplementation(async () => {
       // シミュレーション用の削除モック
     });
 
@@ -60,7 +58,7 @@ describe("composeImages", () => {
     );
 
     // GraphicsMagick が呼ばれたことを確認
-    const gmMock = gm as unknown as jest.Mock;
+    const gmMock = gm as unknown as Mock;
     expect(gmMock).toHaveBeenCalledWith(expect.stringContaining(tmpdir()));
 
     // 結合後のバッファが返されることを確認
@@ -74,19 +72,19 @@ describe("composeImages", () => {
   test("GraphicsMagick のエラーを適切に処理する", async () => {
     const buffers = [Buffer.from("image1"), Buffer.from("image2")];
 
-    (writeFile as jest.Mock).mockImplementation(() => {
+    (writeFile as Mock).mockImplementation(() => {
       // シミュレーション用の書き込みモック
     });
 
-    (unlink as jest.Mock).mockImplementation(() => {
+    (unlink as Mock).mockImplementation(() => {
       // シミュレーション用の削除モック
     });
 
     const error = new Error("GM Error");
-    (gm as unknown as jest.Mock).mockImplementationOnce(() => ({
-      in: jest.fn().mockReturnThis(),
-      append: jest.fn().mockReturnThis(),
-      toBuffer: jest.fn(
+    (gm as unknown as Mock).mockImplementationOnce(() => ({
+      in: vi.fn().mockReturnThis(),
+      append: vi.fn().mockReturnThis(),
+      toBuffer: vi.fn(
         (_, callback: (err: Error | null, buffer: Buffer) => void) =>
           callback(error, Buffer.alloc(0)),
       ),
