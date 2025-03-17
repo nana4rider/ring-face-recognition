@@ -2,7 +2,6 @@ import { composeImages, isJpg } from "@/util/imageUtil";
 import { unlink, writeFile } from "fs/promises";
 import gm from "gm";
 import { tmpdir } from "os";
-import { Mock } from "vitest";
 
 vi.mock("node:fs/promises");
 
@@ -11,8 +10,10 @@ vi.mock("gm", () => ({
     in: vi.fn().mockReturnThis(),
     append: vi.fn().mockReturnThis(),
     toBuffer: vi.fn(
-      (_, callback: (err: Error | null, buffer: Buffer) => void) =>
-        callback(null, Buffer.from("test-buffer")),
+      (
+        _format: string,
+        callback: (err: Error | null, buffer: Buffer) => void,
+      ) => callback(null, Buffer.from("test-buffer")),
     ),
   })),
 }));
@@ -36,14 +37,6 @@ describe("composeImages", () => {
   test("複数の画像バッファを結合して返す", async () => {
     const buffers = [Buffer.from("image1"), Buffer.from("image2")];
 
-    (writeFile as Mock).mockImplementation(async () => {
-      // シミュレーション用の書き込みモック
-    });
-
-    (unlink as Mock).mockImplementation(async () => {
-      // シミュレーション用の削除モック
-    });
-
     const result = await composeImages(buffers);
 
     // writeFile が適切に呼ばれたことを確認
@@ -58,8 +51,7 @@ describe("composeImages", () => {
     );
 
     // GraphicsMagick が呼ばれたことを確認
-    const gmMock = gm as unknown as Mock;
-    expect(gmMock).toHaveBeenCalledWith(expect.stringContaining(tmpdir()));
+    expect(gm).toHaveBeenCalledWith(expect.stringContaining(tmpdir()));
 
     // 結合後のバッファが返されることを確認
     expect(result).toEqual(Buffer.from("test-buffer"));
@@ -72,23 +64,21 @@ describe("composeImages", () => {
   test("GraphicsMagick のエラーを適切に処理する", async () => {
     const buffers = [Buffer.from("image1"), Buffer.from("image2")];
 
-    (writeFile as Mock).mockImplementation(() => {
-      // シミュレーション用の書き込みモック
-    });
-
-    (unlink as Mock).mockImplementation(() => {
-      // シミュレーション用の削除モック
-    });
-
-    const error = new Error("GM Error");
-    (gm as unknown as Mock).mockImplementationOnce(() => ({
+    const mockGmReturnValue: Partial<ReturnType<typeof gm>> = {
       in: vi.fn().mockReturnThis(),
       append: vi.fn().mockReturnThis(),
-      toBuffer: vi.fn(
-        (_, callback: (err: Error | null, buffer: Buffer) => void) =>
-          callback(error, Buffer.alloc(0)),
-      ),
-    }));
+      toBuffer: vi
+        .fn()
+        .mockImplementation(
+          (
+            _format: string,
+            callback: (err: Error | null, buffer: Buffer) => void,
+          ) => callback(new Error("GM Error"), Buffer.alloc(0)),
+        ),
+    };
+    vi.mocked(gm).mockImplementationOnce(
+      () => mockGmReturnValue as ReturnType<typeof gm>,
+    );
 
     await expect(composeImages(buffers)).rejects.toThrow("GM Error");
 

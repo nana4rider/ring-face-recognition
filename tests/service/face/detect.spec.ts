@@ -3,6 +3,8 @@ import detectFace from "@/service/face/detect";
 import { bufferToBlob } from "@/util/dataTransformUtil";
 import { Writable } from "type-fest";
 
+const writableEnv: Writable<typeof env> = env;
+
 const mockFetchResponse = vi.fn();
 global.fetch = vi
   .fn()
@@ -47,11 +49,11 @@ describe("detectFace", () => {
   });
 
   test("オプションがリクエストに反映される", async () => {
-    (env as Writable<typeof env>).DETECT_MIN_SIZE = 100;
-    (env as Writable<typeof env>).DETECT_START_X = 200;
-    (env as Writable<typeof env>).DETECT_START_Y = 300;
-    (env as Writable<typeof env>).DETECT_END_X = 400;
-    (env as Writable<typeof env>).DETECT_END_Y = 500;
+    writableEnv.DETECT_MIN_SIZE = 100;
+    writableEnv.DETECT_START_X = 200;
+    writableEnv.DETECT_START_Y = 300;
+    writableEnv.DETECT_END_X = 400;
+    writableEnv.DETECT_END_Y = 500;
 
     const requestData = Buffer.from("requestData");
 
