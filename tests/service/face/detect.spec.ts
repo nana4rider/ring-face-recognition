@@ -5,12 +5,13 @@ import { Writable } from "type-fest";
 
 const writableEnv: Writable<typeof env> = env;
 
-const mockFetchResponse = vi.fn();
-global.fetch = vi
-  .fn()
-  .mockImplementation((_input: RequestInfo | URL, _init?: RequestInit) => {
+const mockFetchResponse = vi.fn<() => Response>();
+vi.stubGlobal(
+  "fetch",
+  vi.fn<typeof fetch>().mockImplementation((_input, _init) => {
     return Promise.resolve(mockFetchResponse());
-  });
+  }),
+);
 
 describe("detectFace", () => {
   test("API呼び出しが成功した場合、バッファを返す", async () => {
@@ -20,7 +21,7 @@ describe("detectFace", () => {
     } as Response);
     const result = await detectFace(Buffer.from("requestData"));
 
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
@@ -38,7 +39,7 @@ describe("detectFace", () => {
 
     const result = await detectFace(Buffer.from("requestData"));
 
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
@@ -72,7 +73,7 @@ describe("detectFace", () => {
     expectedFormData.append("endY", "500");
     expectedFormData.append("file", bufferToBlob(requestData), "image.jpg");
 
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",

@@ -1,12 +1,13 @@
 import env from "@/env";
 import triggerWebhook from "@/service/webhook";
 
-const mockFetchResponse = vi.fn();
-global.fetch = vi
-  .fn()
-  .mockImplementation((_input: RequestInfo | URL, _init?: RequestInit) => {
+const mockFetchResponse = vi.fn<() => Response>();
+vi.stubGlobal(
+  "fetch",
+  vi.fn<typeof fetch>().mockImplementation((_input, _init) => {
     return Promise.resolve(mockFetchResponse());
-  });
+  }),
+);
 
 describe("triggerWebhook", () => {
   test("ok: true の場合、正常に完了する", async () => {
@@ -22,7 +23,7 @@ describe("triggerWebhook", () => {
 
     await expect(actual).resolves.toBeUndefined();
 
-    expect(global.fetch).toHaveBeenCalledWith(env.WEBHOOK, {
+    expect(fetch).toHaveBeenCalledWith(env.WEBHOOK, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
