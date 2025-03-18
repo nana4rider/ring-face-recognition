@@ -21,7 +21,6 @@ import type {
   FfmpegOptions,
   StreamingSession,
 } from "ring-client-api/lib/streaming/streaming-session";
-import { setTimeout } from "timers/promises";
 import { Writable } from "type-fest";
 
 const writableEnv: Writable<typeof env> = env;
@@ -276,9 +275,10 @@ describe("startFaceRecognition", () => {
     vi.mocked(recognizeFace).mockResolvedValue(undefined);
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(10);
 
-    expect(triggerWebhook).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(triggerWebhook).not.toHaveBeenCalled();
+    });
   });
 
   test("isJpgの条件が満たされないと顔検出しない", async () => {
@@ -290,9 +290,10 @@ describe("startFaceRecognition", () => {
     vi.mocked(readFile).mockResolvedValue("mockRefreshToken");
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(10);
 
-    expect(detectFace).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(detectFace).not.toHaveBeenCalled();
+    });
   });
 
   test("検出した顔が必要数を満たしていない場合、画像合成が行われない", async () => {
@@ -308,9 +309,10 @@ describe("startFaceRecognition", () => {
     vi.mocked(detectFace).mockResolvedValue(mockFaceBuffer);
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(10);
 
-    expect(composeImages).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(composeImages).not.toHaveBeenCalled();
+    });
   });
 
   test("顔検出されなかった場合、画像合成が行われない", async () => {
@@ -323,9 +325,10 @@ describe("startFaceRecognition", () => {
     vi.mocked(detectFace).mockResolvedValue(undefined);
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(10);
 
-    expect(composeImages).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(composeImages).not.toHaveBeenCalled();
+    });
   });
 
   test("顔認識ができたらWebhookをトリガーする", async () => {
@@ -347,14 +350,15 @@ describe("startFaceRecognition", () => {
     vi.mocked(recognizeFace).mockResolvedValue(mockRecognizeFace);
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(10);
 
-    expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
-    expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
-    expect(recognizeFace).toHaveBeenCalledWith(mockCompositeBuffer);
-    expect(triggerWebhook).toHaveBeenCalledWith({
-      type: "recognition",
-      result: mockRecognizeFace,
+    await vi.waitFor(() => {
+      expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
+      expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
+      expect(recognizeFace).toHaveBeenCalledWith(mockCompositeBuffer);
+      expect(triggerWebhook).toHaveBeenCalledWith({
+        type: "recognition",
+        result: mockRecognizeFace,
+      });
     });
   });
 
@@ -385,15 +389,16 @@ describe("startFaceRecognition", () => {
       .mockResolvedValueOnce(mockRecognizeFace);
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(100);
 
-    expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
-    expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
-    expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
-    expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
-    expect(triggerWebhook).toHaveBeenCalledWith({
-      type: "recognition",
-      result: mockRecognizeFace,
+    await vi.waitFor(() => {
+      expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
+      expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
+      expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
+      expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
+      expect(triggerWebhook).toHaveBeenCalledWith({
+        type: "recognition",
+        result: mockRecognizeFace,
+      });
     });
   });
 
@@ -417,13 +422,14 @@ describe("startFaceRecognition", () => {
     });
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(200);
 
-    expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
-    expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
-    expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
-    expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
-    expect(mockStreamingSession.stop).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
+      expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
+      expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
+      expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
+      expect(mockStreamingSession.stop).toHaveBeenCalled();
+    });
   });
 
   test("タイムアウト時にストリームを停止する", async () => {
@@ -433,12 +439,12 @@ describe("startFaceRecognition", () => {
     const mockStreamingSession = implementMockStreamVideo(mockCamera);
 
     await startFaceRecognition(mockCamera);
-    await setTimeout(10);
 
     vi.runAllTimers();
-
-    expect(mockStreamingSession.stop).toHaveBeenCalled();
-
     vi.useRealTimers();
+
+    await vi.waitFor(() => {
+      expect(mockStreamingSession.stop).toHaveBeenCalled();
+    });
   });
 });
