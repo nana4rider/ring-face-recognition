@@ -1,11 +1,13 @@
 import recognizeFace from "@/service/face/recognize";
-import {
+import type {
   FaceMatch,
-  RekognitionClient,
-  SearchFacesByImageCommand,
   SearchFacesByImageCommandOutput,
 } from "@aws-sdk/client-rekognition";
-import { MockInstance } from "vitest";
+import {
+  RekognitionClient,
+  SearchFacesByImageCommand,
+} from "@aws-sdk/client-rekognition";
+import type { MockInstance } from "vitest";
 
 type RekognitionSend = MockInstance<
   (

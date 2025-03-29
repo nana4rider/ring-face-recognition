@@ -1,6 +1,6 @@
 {
   "name": "ring-face-recognition",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "author": "nana4rider",
   "license": "ISC",
   "main": "dist/index.js",
@@ -10,14 +10,18 @@
     "dev": "tsx --env-file=.env src/index.ts",
     "start": "node dist/index",
     "build": "node build.js",
-    "lint": "tsc && eslint --max-warnings 0 && prettier . --check",
+    "type-check": "tsc",
+    "lint": "eslint --max-warnings 0 && prettier . --check",
     "lint:fix": "eslint --fix && prettier . --write",
     "test": "vitest run",
     "prepare": "husky",
     "token": "tsx --env-file=.env fetch-refresh-token.ts"
   },
   "lint-staged": {
-    "*.ts": "npm run lint"
+    "*.ts": [
+      "eslint --max-warnings 0",
+      "prettier --check"
+    ]
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.723.0",
@@ -33,6 +37,7 @@
     "@types/debug": "^4.1.12",
     "@types/gm": "^1.25.4",
     "@types/multicast-dns": "^7.2.4",
+    "@types/node": "^22.13.14",
     "@types/socket.io-client": "^1.4.36",
     "@vitest/coverage-v8": "^3.0.8",
     "@vitest/eslint-plugin": "^1.1.37",

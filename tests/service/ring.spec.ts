@@ -11,17 +11,17 @@ import { composeImages, isJpg } from "@/util/imageUtil";
 import assert from "assert";
 import { writeFileSync } from "fs";
 import { readFile } from "fs/promises";
-import {
-  PushNotificationAction,
+import type {
   PushNotificationDingV2,
   RingCamera,
   default as ring,
 } from "ring-client-api";
+import { PushNotificationAction } from "ring-client-api";
 import type {
   FfmpegOptions,
   StreamingSession,
 } from "ring-client-api/lib/streaming/streaming-session";
-import { Writable } from "type-fest";
+import type { Writable } from "type-fest";
 
 const writableEnv: Writable<typeof env> = env;
 

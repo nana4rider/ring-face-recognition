@@ -1,7 +1,7 @@
 import env from "@/env";
 import detectFace from "@/service/face/detect";
 import { bufferToBlob } from "@/util/dataTransformUtil";
-import { Writable } from "type-fest";
+import type { Writable } from "type-fest";
 
 const writableEnv: Writable<typeof env> = env;
 

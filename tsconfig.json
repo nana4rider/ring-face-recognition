@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "resolveJsonModule": true,
+    "isolatedModules": true,
     "paths": {
       "@/*": ["src/*"],
       "werift-rtp/*": ["node_modules/werift-rtp/lib/common/src"]

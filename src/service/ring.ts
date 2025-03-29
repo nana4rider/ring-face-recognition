@@ -1,14 +1,16 @@
 import env from "@/env";
 import logger from "@/logger";
 import detectFace from "@/service/face/detect";
-import recognizeFace, { RecognizeResult } from "@/service/face/recognize";
+import type { RecognizeResult } from "@/service/face/recognize";
+import recognizeFace from "@/service/face/recognize";
 import triggerWebhook from "@/service/webhook";
 import { composeImages, isJpg } from "@/util/imageUtil";
 import dayjs from "dayjs";
 import { writeFileSync } from "fs";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { PushNotificationAction, RingApi, RingCamera } from "ring-client-api";
+import type { RingCamera } from "ring-client-api";
+import { PushNotificationAction, RingApi } from "ring-client-api";
 
 export async function initializeRingCamera(): Promise<RingCamera> {
   const refreshToken = (await readFile(env.REFRESH_TOKEN_PATH, "utf-8")).trim();

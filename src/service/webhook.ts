@@ -1,5 +1,5 @@
 import env from "@/env";
-import { JsonValue } from "type-fest";
+import type { JsonValue } from "type-fest";
 
 export default async function triggerWebhook(
   payload: JsonValue,
