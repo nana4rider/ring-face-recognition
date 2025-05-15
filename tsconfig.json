@@ -12,8 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "paths": {
-      "@/*": ["src/*"],
-      "werift-rtp/*": ["node_modules/werift-rtp/lib/common/src"]
+      "@/*": ["src/*"]
     },
     "types": ["vitest/globals"]
   }

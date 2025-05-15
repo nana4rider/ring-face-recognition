@@ -11,16 +11,14 @@ import { composeImages, isJpg } from "@/util/imageUtil";
 import assert from "assert";
 import { writeFileSync } from "fs";
 import { readFile } from "fs/promises";
-import type {
-  PushNotificationDingV2,
-  RingCamera,
-  default as ring,
-} from "ring-client-api";
+import type * as ring from "ring-client-api";
+import type { PushNotificationDingV2, RingCamera } from "ring-client-api";
 import { PushNotificationAction } from "ring-client-api";
 import type {
   FfmpegOptions,
   StreamingSession,
 } from "ring-client-api/lib/streaming/streaming-session";
+import { setTimeout } from "timers/promises";
 import type { Writable } from "type-fest";
 
 const writableEnv: Writable<typeof env> = env;
@@ -275,10 +273,9 @@ describe("startFaceRecognition", () => {
     vi.mocked(recognizeFace).mockResolvedValue(undefined);
 
     await startFaceRecognition(mockCamera);
+    await setTimeout(50);
 
-    await vi.waitFor(() => {
-      expect(triggerWebhook).not.toHaveBeenCalled();
-    });
+    expect(triggerWebhook).not.toHaveBeenCalled();
   });
 
   test("isJpgの条件が満たされないと顔検出しない", async () => {
@@ -290,10 +287,9 @@ describe("startFaceRecognition", () => {
     vi.mocked(readFile).mockResolvedValue("mockRefreshToken");
 
     await startFaceRecognition(mockCamera);
+    await setTimeout(50);
 
-    await vi.waitFor(() => {
-      expect(detectFace).not.toHaveBeenCalled();
-    });
+    expect(detectFace).not.toHaveBeenCalled();
   });
 
   test("検出した顔が必要数を満たしていない場合、画像合成が行われない", async () => {
@@ -309,10 +305,9 @@ describe("startFaceRecognition", () => {
     vi.mocked(detectFace).mockResolvedValue(mockFaceBuffer);
 
     await startFaceRecognition(mockCamera);
+    await setTimeout(50);
 
-    await vi.waitFor(() => {
-      expect(composeImages).not.toHaveBeenCalled();
-    });
+    expect(composeImages).not.toHaveBeenCalled();
   });
 
   test("顔検出されなかった場合、画像合成が行われない", async () => {
@@ -325,10 +320,9 @@ describe("startFaceRecognition", () => {
     vi.mocked(detectFace).mockResolvedValue(undefined);
 
     await startFaceRecognition(mockCamera);
+    await setTimeout(50);
 
-    await vi.waitFor(() => {
-      expect(composeImages).not.toHaveBeenCalled();
-    });
+    expect(composeImages).not.toHaveBeenCalled();
   });
 
   test("顔認識ができたらWebhookをトリガーする", async () => {
