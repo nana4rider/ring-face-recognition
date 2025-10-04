@@ -23,7 +23,7 @@ describe("triggerWebhook", () => {
 
     await expect(actual).resolves.toBeUndefined();
 
-    expect(fetch).toHaveBeenCalledWith(env.WEBHOOK, {
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(env.WEBHOOK, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

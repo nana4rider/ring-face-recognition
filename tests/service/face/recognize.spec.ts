@@ -40,7 +40,7 @@ describe("recognizeFace", () => {
 
     const result = await recognizeFace(mockImageBuffer);
 
-    expect(mockSend).toHaveBeenCalledWith(
+    expect(mockSend).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         input: {
           CollectionId: "test-collection-id",
@@ -80,7 +80,7 @@ describe("recognizeFace", () => {
 
     const result = await recognizeFace(mockImageBuffer);
 
-    expect(mockSend).toHaveBeenCalledWith(
+    expect(mockSend).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         input: {
           CollectionId: "test-collection-id",
@@ -111,7 +111,7 @@ describe("recognizeFace", () => {
 
     const result = await recognizeFace(mockImageBuffer);
 
-    expect(mockSend).toHaveBeenCalledWith(
+    expect(mockSend).toHaveBeenCalledExactlyOnceWith(
       expect.any(SearchFacesByImageCommand),
     );
     expect(result).toBeUndefined();
@@ -131,7 +131,7 @@ describe("recognizeFace", () => {
 
     const result = await recognizeFace(mockImageBuffer);
 
-    expect(mockSend).toHaveBeenCalledWith(
+    expect(mockSend).toHaveBeenCalledExactlyOnceWith(
       expect.any(SearchFacesByImageCommand),
     );
     expect(result).toBeUndefined();

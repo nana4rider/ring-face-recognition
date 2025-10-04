@@ -41,24 +41,35 @@ describe("composeImages", () => {
 
     // writeFile が適切に呼ばれたことを確認
     expect(writeFile).toHaveBeenCalledTimes(2);
-    expect(writeFile).toHaveBeenCalledWith(
+    expect(writeFile).toHaveBeenNthCalledWith(
+      1,
       expect.stringContaining(tmpdir()),
       buffers[0],
     );
-    expect(writeFile).toHaveBeenCalledWith(
+    expect(writeFile).toHaveBeenNthCalledWith(
+      2,
       expect.stringContaining(tmpdir()),
       buffers[1],
     );
 
     // GraphicsMagick が呼ばれたことを確認
-    expect(gm).toHaveBeenCalledWith(expect.stringContaining(tmpdir()));
+    expect(gm).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining(tmpdir()),
+    );
 
     // 結合後のバッファが返されることを確認
     expect(result).toEqual(Buffer.from("test-buffer"));
 
     // unlink が適切に呼ばれたことを確認
     expect(unlink).toHaveBeenCalledTimes(2);
-    expect(unlink).toHaveBeenCalledWith(expect.stringContaining(tmpdir()));
+    expect(unlink).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining(tmpdir()),
+    );
+    expect(unlink).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining(tmpdir()),
+    );
   });
 
   test("GraphicsMagick のエラーを適切に処理する", async () => {
@@ -84,7 +95,14 @@ describe("composeImages", () => {
 
     // unlink が適切に呼ばれたことを確認
     expect(unlink).toHaveBeenCalledTimes(2);
-    expect(unlink).toHaveBeenCalledWith(expect.stringContaining(tmpdir()));
+    expect(unlink).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining(tmpdir()),
+    );
+    expect(unlink).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining(tmpdir()),
+    );
   });
 });
 

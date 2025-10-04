@@ -122,7 +122,7 @@ describe("initializeRingCamera", () => {
 
     const result = await initializeRingCamera();
 
-    expect(readFile).toHaveBeenCalledWith(
+    expect(readFile).toHaveBeenCalledExactlyOnceWith(
       expect.stringMatching(/refreshToken/),
       "utf-8",
     );
@@ -159,7 +159,7 @@ describe("initializeRingCamera", () => {
 
     await initializeRingCamera();
 
-    expect(writeFileSync).toHaveBeenCalledWith(
+    expect(writeFileSync).toHaveBeenCalledExactlyOnceWith(
       expect.stringMatching(/refreshToken/),
       mockNewRefreshToken,
     );
@@ -182,7 +182,7 @@ describe("setupCameraEventListeners", () => {
 
     await vi.waitFor(() => {
       expect(mockCamera.streamVideo).toHaveBeenCalledTimes(1);
-      expect(triggerWebhook).toHaveBeenCalledWith({
+      expect(triggerWebhook).toHaveBeenCalledExactlyOnceWith({
         type: "notification",
         event: "motion",
       });
@@ -222,7 +222,7 @@ describe("setupCameraEventListeners", () => {
     subscribeCallback(notification);
 
     expect(mockCamera.streamVideo).not.toHaveBeenCalled();
-    expect(triggerWebhook).toHaveBeenCalledWith({
+    expect(triggerWebhook).toHaveBeenCalledExactlyOnceWith({
       type: "notification",
       event: "ding",
     });
@@ -252,9 +252,9 @@ describe("setupCameraEventListeners", () => {
     setupCameraEventListeners(mockCamera);
 
     expect(mockCamera.onNewNotification.subscribe).toHaveBeenCalledTimes(1);
-    expect(mockCamera.onNewNotification.subscribe).toHaveBeenCalledWith(
-      expect.any(Function),
-    );
+    expect(
+      mockCamera.onNewNotification.subscribe,
+    ).toHaveBeenCalledExactlyOnceWith(expect.any(Function));
   });
 });
 
@@ -346,10 +346,12 @@ describe("startFaceRecognition", () => {
     await startFaceRecognition(mockCamera);
 
     await vi.waitFor(() => {
-      expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
-      expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
-      expect(recognizeFace).toHaveBeenCalledWith(mockCompositeBuffer);
-      expect(triggerWebhook).toHaveBeenCalledWith({
+      expect(detectFace).toHaveBeenCalledExactlyOnceWith(mockImageBuffer);
+      expect(composeImages).toHaveBeenCalledExactlyOnceWith([mockFaceBuffer]);
+      expect(recognizeFace).toHaveBeenCalledExactlyOnceWith(
+        mockCompositeBuffer,
+      );
+      expect(triggerWebhook).toHaveBeenCalledExactlyOnceWith({
         type: "recognition",
         result: mockRecognizeFace,
       });
@@ -385,11 +387,13 @@ describe("startFaceRecognition", () => {
     await startFaceRecognition(mockCamera);
 
     await vi.waitFor(() => {
-      expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
-      expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
+      expect(detectFace).toHaveBeenNthCalledWith(1, mockImageBuffer);
+      expect(detectFace).toHaveBeenNthCalledWith(2, mockImageBuffer);
+      expect(composeImages).toHaveBeenNthCalledWith(1, [mockFaceBuffer]);
+      expect(composeImages).toHaveBeenNthCalledWith(2, [mockFaceBuffer]);
       expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
       expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
-      expect(triggerWebhook).toHaveBeenCalledWith({
+      expect(triggerWebhook).toHaveBeenCalledExactlyOnceWith({
         type: "recognition",
         result: mockRecognizeFace,
       });
@@ -418,8 +422,10 @@ describe("startFaceRecognition", () => {
     await startFaceRecognition(mockCamera);
 
     await vi.waitFor(() => {
-      expect(detectFace).toHaveBeenCalledWith(mockImageBuffer);
-      expect(composeImages).toHaveBeenCalledWith([mockFaceBuffer]);
+      expect(detectFace).toHaveBeenNthCalledWith(1, mockImageBuffer);
+      expect(detectFace).toHaveBeenNthCalledWith(2, mockImageBuffer);
+      expect(composeImages).toHaveBeenNthCalledWith(1, [mockFaceBuffer]);
+      expect(composeImages).toHaveBeenNthCalledWith(2, [mockFaceBuffer]);
       expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
       expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
       expect(mockStreamingSession.stop).toHaveBeenCalled();

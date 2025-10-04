@@ -21,7 +21,7 @@ describe("detectFace", () => {
     } as Response);
     const result = await detectFace(Buffer.from("requestData"));
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
       `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
@@ -39,7 +39,8 @@ describe("detectFace", () => {
 
     const result = await detectFace(Buffer.from("requestData"));
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
       `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
@@ -73,7 +74,8 @@ describe("detectFace", () => {
     expectedFormData.append("endY", "500");
     expectedFormData.append("file", bufferToBlob(requestData), "image.jpg");
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
       `${env.FACE_DETECTOR_API}/detect`,
       expect.objectContaining({
         method: "POST",
