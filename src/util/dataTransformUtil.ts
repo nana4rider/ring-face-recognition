@@ -1,5 +1,5 @@
 export function bufferToBlob(buffer: Buffer) {
-  return new Blob([buffer]);
+  return new Blob([buffer as Uint8Array<ArrayBuffer>]);
 }
 
 export async function blobToBuffer(blob: Blob | Promise<Blob>) {
