@@ -52,12 +52,12 @@ vi.mock("ring-client-api", async () => {
 
   return {
     ...actual,
-    RingApi: vi.fn().mockImplementation(() => ({
-      onRefreshTokenUpdated: {
+    RingApi: class RingApi {
+      onRefreshTokenUpdated = {
         subscribe: mockRefreshTokenSubscribe,
-      },
-      getCameras: mockGetCameras,
-    })),
+      };
+      getCameras = mockGetCameras;
+    },
   };
 });
 

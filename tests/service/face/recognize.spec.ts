@@ -16,6 +16,10 @@ type RekognitionSend = MockInstance<
 >;
 
 describe("recognizeFace", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   test("一致する顔が見つかった場合、顔の詳細を返す", async () => {
     const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
@@ -80,16 +84,12 @@ describe("recognizeFace", () => {
 
     const result = await recognizeFace(mockImageBuffer);
 
-    expect(mockSend).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        input: {
-          CollectionId: "test-collection-id",
-          FaceMatchThreshold: undefined,
-          Image: { Bytes: mockImageBuffer },
-          MaxFaces: 1,
-        },
-      }),
-    );
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls[0][0].input).toEqual({
+      CollectionId: "test-collection-id",
+      Image: { Bytes: mockImageBuffer },
+      MaxFaces: 1,
+    });
     expect(result).toEqual({
       faceId: "testFaceId",
       imageId: "testImageId",

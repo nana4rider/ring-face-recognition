@@ -38,7 +38,7 @@ export async function initializeRingCamera(): Promise<RingCamera> {
 
 export async function startFaceRecognition(camera: RingCamera) {
   let debugDir = "";
-  /* istanbul ignore next */
+  /* v8 ignore if -- @preserve */
   if (logger.isDebugEnabled()) {
     debugDir = dayjs().format("YYYY-MM-DD-HH-mm-ss");
     await mkdir(path.join("snapshot", debugDir), { recursive: true });
@@ -172,7 +172,7 @@ async function writeDebugFile(
   targetDir: string,
   suffix: string,
 ) {
-  /* istanbul ignore next */
+  /* v8 ignore if -- @preserve */
   if (logger.isDebugEnabled()) {
     const timestamp = dayjs().format("YYYY-MM-DD-HH-mm-ss-SSS");
     const fileName = `${timestamp}_${suffix}.jpg`;
