@@ -73,6 +73,14 @@ export async function startFaceRecognition(camera: RingCamera) {
       return;
     }
 
+    // 初回のみ、detectイベントを送信する
+    if (retryCount === 0) {
+      await triggerWebhook({
+        type: "detect",
+        image: imageBuffer.toString("base64"),
+      });
+    }
+
     logger.info("画像の合成開始");
     const compositeFaceImageBuffer = await composeImages(faceImageBuffers);
     logger.info("画像の合成完了");

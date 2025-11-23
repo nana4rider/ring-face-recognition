@@ -259,7 +259,7 @@ describe("setupCameraEventListeners", () => {
 });
 
 describe("startFaceRecognition", () => {
-  test("顔認識できない場合、Webhookが呼ばれない", async () => {
+  test("顔認識できない場合、recognitionのWebhookが呼ばれない", async () => {
     const mockCamera = getMockCamera();
     const mockImageBuffer = Buffer.from("mockImageBuffer");
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
@@ -275,7 +275,7 @@ describe("startFaceRecognition", () => {
     await startFaceRecognition(mockCamera);
     await setTimeout(50);
 
-    expect(triggerWebhook).not.toHaveBeenCalled();
+    expect(triggerWebhook).toHaveBeenCalledTimes(1);
   });
 
   test("isJpgの条件が満たされないと顔検出しない", async () => {
@@ -325,6 +325,34 @@ describe("startFaceRecognition", () => {
     expect(composeImages).not.toHaveBeenCalled();
   });
 
+  test("顔検出ができたらWebhookをトリガーする", async () => {
+    const mockCamera = getMockCamera();
+    const mockImageBuffer = Buffer.from("mockImageBuffer");
+    const mockFaceBuffer = Buffer.from("mockFaceBuffer");
+    const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
+    const mockRecognizeFace = {
+      faceId: "testFaceId",
+      imageId: "testImageId",
+      externalImageId: "testExternalImageId",
+    };
+    implementMockStreamVideo(mockCamera, mockImageBuffer);
+
+    vi.mocked(isJpg).mockReturnValue(true);
+    vi.mocked(readFile).mockResolvedValue("mockRefreshToken");
+    vi.mocked(detectFace).mockResolvedValue(mockFaceBuffer);
+    vi.mocked(composeImages).mockResolvedValue(mockCompositeBuffer);
+    vi.mocked(recognizeFace).mockResolvedValue(mockRecognizeFace);
+
+    await startFaceRecognition(mockCamera);
+
+    await vi.waitFor(() => {
+      expect(triggerWebhook).toHaveBeenNthCalledWith(1, {
+        type: "detect",
+        image: mockImageBuffer.toString("base64"),
+      });
+    });
+  });
+
   test("顔認識ができたらWebhookをトリガーする", async () => {
     const mockCamera = getMockCamera();
     const mockImageBuffer = Buffer.from("mockImageBuffer");
@@ -351,7 +379,7 @@ describe("startFaceRecognition", () => {
       expect(recognizeFace).toHaveBeenCalledExactlyOnceWith(
         mockCompositeBuffer,
       );
-      expect(triggerWebhook).toHaveBeenCalledExactlyOnceWith({
+      expect(triggerWebhook).toHaveBeenLastCalledWith({
         type: "recognition",
         result: mockRecognizeFace,
       });
@@ -393,7 +421,7 @@ describe("startFaceRecognition", () => {
       expect(composeImages).toHaveBeenNthCalledWith(2, [mockFaceBuffer]);
       expect(recognizeFace).toHaveBeenNthCalledWith(1, mockCompositeBuffer);
       expect(recognizeFace).toHaveBeenNthCalledWith(2, mockCompositeBuffer);
-      expect(triggerWebhook).toHaveBeenCalledExactlyOnceWith({
+      expect(triggerWebhook).toHaveBeenLastCalledWith({
         type: "recognition",
         result: mockRecognizeFace,
       });
