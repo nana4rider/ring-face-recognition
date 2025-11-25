@@ -334,6 +334,7 @@ describe("startFaceRecognition", () => {
       faceId: "testFaceId",
       imageId: "testImageId",
       externalImageId: "testExternalImageId",
+      similarity: 97,
     };
     implementMockStreamVideo(mockCamera, mockImageBuffer);
 
@@ -362,6 +363,7 @@ describe("startFaceRecognition", () => {
       faceId: "testFaceId",
       imageId: "testImageId",
       externalImageId: "testExternalImageId",
+      similarity: 97,
     };
     implementMockStreamVideo(mockCamera, mockImageBuffer);
 
@@ -395,6 +397,7 @@ describe("startFaceRecognition", () => {
       faceId: "testFaceId",
       imageId: "testImageId",
       externalImageId: "testExternalImageId",
+      similarity: 97,
     };
     const mockStreamingSession = implementMockStreamVideo(
       mockCamera,
