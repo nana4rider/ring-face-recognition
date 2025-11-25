@@ -11,6 +11,7 @@ export type RecognizeResult = {
   faceId: string;
   imageId: string;
   externalImageId: string | null;
+  similarity: number;
 };
 
 export default async function recognizeFace(
@@ -45,10 +46,11 @@ export default async function recognizeFace(
     `[Rekognition] Similarity: ${face.Similarity} / Confidence: ${face.Face.Confidence}`,
   );
 
+  const similarity = face.Similarity;
+
   if (
-    face.Similarity &&
-    env.FACE_MATCH_THRESHOLD &&
-    env.FACE_MATCH_THRESHOLD > face.Similarity
+    !similarity ||
+    (env.FACE_MATCH_THRESHOLD && env.FACE_MATCH_THRESHOLD > similarity)
   ) {
     logger.info("[Rekognition] 検出されているが閾値を下回っている");
     return undefined;
@@ -62,5 +64,6 @@ export default async function recognizeFace(
     faceId,
     imageId,
     externalImageId,
+    similarity,
   };
 }

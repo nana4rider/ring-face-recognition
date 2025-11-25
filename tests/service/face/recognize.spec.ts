@@ -58,6 +58,7 @@ describe("recognizeFace", () => {
       faceId: "testFaceId",
       imageId: "testImageId",
       externalImageId: "externalImageId",
+      similarity: 97,
     });
   });
 
@@ -94,6 +95,7 @@ describe("recognizeFace", () => {
       faceId: "testFaceId",
       imageId: "testImageId",
       externalImageId: null,
+      similarity: 97,
     });
   });
 
