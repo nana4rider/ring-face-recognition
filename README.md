@@ -69,7 +69,7 @@ docker run -d \
   -p 3000:3000 \
   --env-file .env \
   --restart always \
-  nana4rider/ring-face-recognition:latest
+  ghcr.io/nana4rider/ring-face-recognition:latest
 ```
 
 > [!TIP]
