@@ -17,7 +17,7 @@ import { PushNotificationAction } from "ring-client-api";
 import type {
   FfmpegOptions,
   StreamingSession,
-} from "ring-client-api/lib/streaming/streaming-session";
+} from "ring-client-api/streaming/streaming-session";
 import { setTimeout } from "timers/promises";
 import type { Writable } from "type-fest";
 

@@ -15,7 +15,7 @@
     "lint:fix": "eslint --fix && prettier . --write",
     "test": "vitest run",
     "prepare": "husky",
-    "token": "tsx --env-file=.env fetch-refresh-token.ts"
+    "token": "npx -p ring-client-api ring-auth-cli"
   },
   "lint-staged": {
     "*.ts": [
