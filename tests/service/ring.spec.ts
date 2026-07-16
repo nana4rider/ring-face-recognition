@@ -333,6 +333,7 @@ describe("startFaceRecognition", () => {
     const mockRecognizeFace = {
       faceId: "testFaceId",
       imageId: "testImageId",
+      userId: "testUserId",
       externalImageId: "testExternalImageId",
       similarity: 97,
     };
@@ -362,6 +363,7 @@ describe("startFaceRecognition", () => {
     const mockRecognizeFace = {
       faceId: "testFaceId",
       imageId: "testImageId",
+      userId: "testUserId",
       externalImageId: "testExternalImageId",
       similarity: 97,
     };
@@ -396,6 +398,7 @@ describe("startFaceRecognition", () => {
     const mockRecognizeFace = {
       faceId: "testFaceId",
       imageId: "testImageId",
+      userId: "testUserId",
       externalImageId: "testExternalImageId",
       similarity: 97,
     };
