@@ -331,10 +331,7 @@ describe("startFaceRecognition", () => {
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
     const mockRecognizeFace = {
-      faceId: "testFaceId",
-      imageId: "testImageId",
       userId: "testUserId",
-      externalImageId: "testExternalImageId",
       similarity: 97,
     };
     implementMockStreamVideo(mockCamera, mockImageBuffer);
@@ -361,10 +358,7 @@ describe("startFaceRecognition", () => {
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
     const mockRecognizeFace = {
-      faceId: "testFaceId",
-      imageId: "testImageId",
       userId: "testUserId",
-      externalImageId: "testExternalImageId",
       similarity: 97,
     };
     implementMockStreamVideo(mockCamera, mockImageBuffer);
@@ -396,10 +390,7 @@ describe("startFaceRecognition", () => {
     const mockFaceBuffer = Buffer.from("mockFaceBuffer");
     const mockCompositeBuffer = Buffer.from("mockCompositeBuffer");
     const mockRecognizeFace = {
-      faceId: "testFaceId",
-      imageId: "testImageId",
       userId: "testUserId",
-      externalImageId: "testExternalImageId",
       similarity: 97,
     };
     const mockStreamingSession = implementMockStreamVideo(

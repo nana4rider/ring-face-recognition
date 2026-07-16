@@ -2,16 +2,13 @@ import env from "@/env";
 import logger from "@/logger";
 import {
   RekognitionClient,
-  SearchFacesByImageCommand,
+  SearchUsersByImageCommand,
 } from "@aws-sdk/client-rekognition";
 
 const rekognition = new RekognitionClient();
 
 export type RecognizeResult = {
-  faceId: string;
-  imageId: string;
-  userId: string | null;
-  externalImageId: string | null;
+  userId: string;
   similarity: number;
 };
 
@@ -20,34 +17,25 @@ export default async function recognizeFace(
 ): Promise<RecognizeResult | undefined> {
   logger.info("[Rekognition] 開始");
 
-  const command = new SearchFacesByImageCommand({
+  const command = new SearchUsersByImageCommand({
     CollectionId: env.AWS_REKOGNITION_COLLECTION_ID,
     Image: { Bytes: imageBuffer },
-    MaxFaces: 1,
+    MaxUsers: 1,
   });
 
   const result = await rekognition.send(command);
 
-  const {
-    FaceMatches: matches,
-    SearchedFaceConfidence: searchedFaceConfidence,
-  } = result;
+  const { UserMatches: matches } = result;
 
-  if (!searchedFaceConfidence) {
-    logger.info("[Rekognition] 顔が検出されなかった");
-    return undefined;
-  }
-  const face = matches ? matches.shift() : undefined;
-  if (!face?.Face) {
+  const user = matches ? matches.shift() : undefined;
+  if (!user?.User?.UserId) {
     logger.info("[Rekognition] 登録されていない");
     return undefined;
   }
 
-  logger.info(
-    `[Rekognition] Similarity: ${face.Similarity} / Confidence: ${face.Face.Confidence}`,
-  );
+  logger.info(`[Rekognition] Similarity: ${user.Similarity}`);
 
-  const similarity = face.Similarity;
+  const similarity = user.Similarity;
 
   if (
     !similarity ||
@@ -57,16 +45,8 @@ export default async function recognizeFace(
     return undefined;
   }
 
-  const faceId = face.Face.FaceId!;
-  const imageId = face.Face.ImageId!;
-  const userId = face.Face.UserId ?? null;
-  const externalImageId = face.Face.ExternalImageId ?? null;
-
   return {
-    faceId,
-    imageId,
-    userId,
-    externalImageId,
+    userId: user.User.UserId,
     similarity,
   };
 }

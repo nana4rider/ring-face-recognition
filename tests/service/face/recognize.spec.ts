@@ -1,18 +1,15 @@
 import recognizeFace from "@/service/face/recognize";
-import type {
-  FaceMatch,
-  SearchFacesByImageCommandOutput,
-} from "@aws-sdk/client-rekognition";
+import type { SearchUsersByImageCommandOutput } from "@aws-sdk/client-rekognition";
 import {
   RekognitionClient,
-  SearchFacesByImageCommand,
+  SearchUsersByImageCommand,
 } from "@aws-sdk/client-rekognition";
 import type { MockInstance } from "vitest";
 
 type RekognitionSend = MockInstance<
   (
-    command: SearchFacesByImageCommand,
-  ) => Promise<SearchFacesByImageCommandOutput>
+    command: SearchUsersByImageCommand,
+  ) => Promise<SearchUsersByImageCommandOutput>
 >;
 
 describe("recognizeFace", () => {
@@ -20,7 +17,7 @@ describe("recognizeFace", () => {
     vi.clearAllMocks();
   });
 
-  test("一致する顔が見つかった場合、顔の詳細を返す", async () => {
+  test("一致するユーザーが見つかった場合、ユーザーIDを返す", async () => {
     const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
@@ -28,20 +25,15 @@ describe("recognizeFace", () => {
     const mockImageBuffer = Buffer.from("mockBuffer");
 
     mockSend.mockResolvedValue({
-      FaceMatches: [
+      UserMatches: [
         {
-          Face: {
-            FaceId: "testFaceId",
-            ImageId: "testImageId",
+          User: {
             UserId: "testUserId",
-            ExternalImageId: "externalImageId",
-            Confidence: 98,
           },
           Similarity: 97,
         },
       ],
-      SearchedFaceConfidence: 99,
-    } as SearchFacesByImageCommandOutput);
+    } as SearchUsersByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
@@ -49,100 +41,18 @@ describe("recognizeFace", () => {
       expect.objectContaining({
         input: {
           CollectionId: "test-collection-id",
-          FaceMatchThreshold: undefined,
           Image: { Bytes: mockImageBuffer },
-          MaxFaces: 1,
+          MaxUsers: 1,
         },
       }),
     );
     expect(result).toEqual({
-      faceId: "testFaceId",
-      imageId: "testImageId",
       userId: "testUserId",
-      externalImageId: "externalImageId",
       similarity: 97,
     });
   });
 
-  test("externalImageIdが未設定の場合、nullを返す", async () => {
-    const mockSend: RekognitionSend = vi.spyOn(
-      RekognitionClient.prototype,
-      "send",
-    );
-    const mockImageBuffer = Buffer.from("mockBuffer");
-
-    mockSend.mockResolvedValue({
-      FaceMatches: [
-        {
-          Face: {
-            FaceId: "testFaceId",
-            ImageId: "testImageId",
-            UserId: "testUserId",
-            Confidence: 98,
-          },
-          Similarity: 97,
-        },
-      ],
-      SearchedFaceConfidence: 99,
-    } as SearchFacesByImageCommandOutput);
-
-    const result = await recognizeFace(mockImageBuffer);
-
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend.mock.calls[0][0].input).toEqual({
-      CollectionId: "test-collection-id",
-      Image: { Bytes: mockImageBuffer },
-      MaxFaces: 1,
-    });
-    expect(result).toEqual({
-      faceId: "testFaceId",
-      imageId: "testImageId",
-      userId: "testUserId",
-      externalImageId: null,
-      similarity: 97,
-    });
-  });
-
-  test("userIdが未設定の場合、nullを返す", async () => {
-    const mockSend: RekognitionSend = vi.spyOn(
-      RekognitionClient.prototype,
-      "send",
-    );
-    const mockImageBuffer = Buffer.from("mockBuffer");
-
-    mockSend.mockResolvedValue({
-      FaceMatches: [
-        {
-          Face: {
-            FaceId: "testFaceId",
-            ImageId: "testImageId",
-            ExternalImageId: "externalImageId",
-            Confidence: 98,
-          },
-          Similarity: 97,
-        },
-      ],
-      SearchedFaceConfidence: 99,
-    } as SearchFacesByImageCommandOutput);
-
-    const result = await recognizeFace(mockImageBuffer);
-
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend.mock.calls[0][0].input).toEqual({
-      CollectionId: "test-collection-id",
-      Image: { Bytes: mockImageBuffer },
-      MaxFaces: 1,
-    });
-    expect(result).toEqual({
-      faceId: "testFaceId",
-      imageId: "testImageId",
-      userId: null,
-      externalImageId: "externalImageId",
-      similarity: 97,
-    });
-  });
-
-  test("FaceMatchesが空の場合、undefinedを返す", async () => {
+  test("UserMatchesが空の場合、undefinedを返す", async () => {
     const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
@@ -150,19 +60,18 @@ describe("recognizeFace", () => {
     const mockImageBuffer = Buffer.from("mockBuffer");
 
     mockSend.mockResolvedValueOnce({
-      FaceMatches: [] as FaceMatch,
-      SearchedFaceConfidence: 0,
-    } as SearchFacesByImageCommandOutput);
+      UserMatches: [],
+    } as unknown as SearchUsersByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
     expect(mockSend).toHaveBeenCalledExactlyOnceWith(
-      expect.any(SearchFacesByImageCommand),
+      expect.any(SearchUsersByImageCommand),
     );
     expect(result).toBeUndefined();
   });
 
-  test("一致する顔が見つからなかった場合、undefinedを返す", async () => {
+  test("一致するユーザーが見つからなかった場合、undefinedを返す", async () => {
     const mockSend: RekognitionSend = vi.spyOn(
       RekognitionClient.prototype,
       "send",
@@ -170,14 +79,13 @@ describe("recognizeFace", () => {
     const mockImageBuffer = Buffer.from("mockBuffer");
 
     mockSend.mockResolvedValueOnce({
-      FaceMatches: undefined,
-      SearchedFaceConfidence: 99,
-    } as SearchFacesByImageCommandOutput);
+      UserMatches: undefined,
+    } as SearchUsersByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
     expect(mockSend).toHaveBeenCalledExactlyOnceWith(
-      expect.any(SearchFacesByImageCommand),
+      expect.any(SearchUsersByImageCommand),
     );
     expect(result).toBeUndefined();
   });
@@ -191,9 +99,13 @@ describe("recognizeFace", () => {
     const mockImageBuffer = Buffer.from("mockBuffer");
 
     mockSend.mockResolvedValue({
-      FaceMatches: [{ Similarity: 80, Face: {} }],
-      SearchedFaceConfidence: 80,
-    } as SearchFacesByImageCommandOutput);
+      UserMatches: [
+        {
+          Similarity: 80,
+          User: { UserId: "testUserId" },
+        },
+      ],
+    } as SearchUsersByImageCommandOutput);
 
     const result = await recognizeFace(mockImageBuffer);
 
