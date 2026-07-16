@@ -33,6 +33,7 @@ describe("recognizeFace", () => {
           Face: {
             FaceId: "testFaceId",
             ImageId: "testImageId",
+            UserId: "testUserId",
             ExternalImageId: "externalImageId",
             Confidence: 98,
           },
@@ -57,6 +58,7 @@ describe("recognizeFace", () => {
     expect(result).toEqual({
       faceId: "testFaceId",
       imageId: "testImageId",
+      userId: "testUserId",
       externalImageId: "externalImageId",
       similarity: 97,
     });
@@ -75,6 +77,7 @@ describe("recognizeFace", () => {
           Face: {
             FaceId: "testFaceId",
             ImageId: "testImageId",
+            UserId: "testUserId",
             Confidence: 98,
           },
           Similarity: 97,
@@ -94,7 +97,47 @@ describe("recognizeFace", () => {
     expect(result).toEqual({
       faceId: "testFaceId",
       imageId: "testImageId",
+      userId: "testUserId",
       externalImageId: null,
+      similarity: 97,
+    });
+  });
+
+  test("userIdが未設定の場合、nullを返す", async () => {
+    const mockSend: RekognitionSend = vi.spyOn(
+      RekognitionClient.prototype,
+      "send",
+    );
+    const mockImageBuffer = Buffer.from("mockBuffer");
+
+    mockSend.mockResolvedValue({
+      FaceMatches: [
+        {
+          Face: {
+            FaceId: "testFaceId",
+            ImageId: "testImageId",
+            ExternalImageId: "externalImageId",
+            Confidence: 98,
+          },
+          Similarity: 97,
+        },
+      ],
+      SearchedFaceConfidence: 99,
+    } as SearchFacesByImageCommandOutput);
+
+    const result = await recognizeFace(mockImageBuffer);
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls[0][0].input).toEqual({
+      CollectionId: "test-collection-id",
+      Image: { Bytes: mockImageBuffer },
+      MaxFaces: 1,
+    });
+    expect(result).toEqual({
+      faceId: "testFaceId",
+      imageId: "testImageId",
+      userId: null,
+      externalImageId: "externalImageId",
       similarity: 97,
     });
   });

@@ -10,6 +10,7 @@ const rekognition = new RekognitionClient();
 export type RecognizeResult = {
   faceId: string;
   imageId: string;
+  userId: string | null;
   externalImageId: string | null;
   similarity: number;
 };
@@ -58,11 +59,13 @@ export default async function recognizeFace(
 
   const faceId = face.Face.FaceId!;
   const imageId = face.Face.ImageId!;
+  const userId = face.Face.UserId ?? null;
   const externalImageId = face.Face.ExternalImageId ?? null;
 
   return {
     faceId,
     imageId,
+    userId,
     externalImageId,
     similarity,
   };
