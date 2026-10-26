@@ -40,6 +40,6 @@ describe("initializeHttpServer", () => {
     // 同じポートで2つ目のHTTPサーバーを立ち上げる
     writableEnv.PORT = server.port;
 
-    await expect(initializeHttpServer()).rejects.toThrowError();
+    await expect(initializeHttpServer()).rejects.toThrow();
   });
 });

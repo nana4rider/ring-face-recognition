@@ -1,6 +1,6 @@
 {
   "name": "ring-face-recognition",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": "nana4rider",
   "license": "ISC",
   "main": "dist/index.js",
@@ -25,9 +25,9 @@
     "*.{js,json,md,yml,yaml}": "prettier --check"
   },
   "dependencies": {
-    "@aws-sdk/client-rekognition": "^3.1088.0",
-    "dayjs": "^1.11.21",
-    "envalid": "^8.2.0",
+    "@aws-sdk/client-rekognition": "^3.1156.0",
+    "dayjs": "^1.11.23",
+    "envalid": "^9.0.0",
     "gm": "^1.25.1",
     "ring-client-api": "^14.3.0",
     "winston": "^3.19.0"
@@ -38,21 +38,21 @@
     "@types/debug": "^4.1.13",
     "@types/gm": "^1.25.4",
     "@types/multicast-dns": "^7.2.4",
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.2",
     "@types/socket.io-client": "^3.0.0",
-    "@vitest/coverage-v8": "^4.1.10",
-    "@vitest/eslint-plugin": "^1.6.23",
-    "esbuild": "^0.28.1",
-    "eslint": "^10.7.0",
-    "globals": "^17.7.0",
+    "@vitest/coverage-v8": "^5.0.5",
+    "@vitest/eslint-plugin": "^1.6.28",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.8",
-    "prettier": "^3.9.5",
-    "tsx": "^4.23.1",
-    "type-fest": "^5.8.0",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "type-fest": "^5.10.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.64.0",
+    "typescript-eslint": "^8.72.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.5"
   }
 }
