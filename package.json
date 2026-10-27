@@ -14,15 +14,8 @@
     "lint": "eslint --max-warnings 0 && prettier . --check",
     "lint:fix": "eslint --fix && prettier . --write",
     "test": "vitest run",
-    "prepare": "husky",
+    "prepare": "lefthook install",
     "token": "npx -p ring-client-api ring-auth-cli"
-  },
-  "lint-staged": {
-    "*.ts": [
-      "eslint --max-warnings 0",
-      "prettier --check"
-    ],
-    "*.{js,json,md,yml,yaml}": "prettier --check"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.1156.0",
@@ -45,14 +38,12 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.13.0",
     "globals": "^17.13.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.6.0",
+    "lefthook": "^2.1.4",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "type-fest": "^5.10.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.0",
-    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.5"
   }
 }
