@@ -2,7 +2,7 @@ FROM node:24-alpine AS build
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 COPY src ./src
 COPY tsconfig.json build.js ./
@@ -25,4 +25,4 @@ COPY --chown=node:node --from=build /app/dist dist
 USER node
 EXPOSE 3000
 
-ENTRYPOINT ["node", "dist/index"]
+ENTRYPOINT ["node", "--no-deprecation", "dist/index"]
